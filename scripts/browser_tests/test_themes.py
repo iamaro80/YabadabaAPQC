@@ -5,6 +5,7 @@ Theme system, WCAG AA contrast, keyboard navigation, and theme screenshots brows
 import os
 import time
 import base64
+from browser_tests.cdp_client import load_workbook
 
 def run_theme_tests(client, project_dir):
     print("\n" + "="*70)
@@ -418,9 +419,9 @@ def run_theme_tests(client, project_dir):
     retail_ir_check = client.evaluate("""({
         elements: state.data.elements.length,
         theme: document.documentElement.getAttribute('data-theme'),
-        isCustom: state.isCustomLoaded
+        appState: state.appState
     })""")
-    print(f"Retail loaded in Indigo Rose: elements={retail_ir_check['elements']}, theme={retail_ir_check['theme']}, isCustom={retail_ir_check['isCustom']}")
+    print(f"Retail loaded in Indigo Rose: elements={retail_ir_check['elements']}, theme={retail_ir_check['theme']}, appState={retail_ir_check['appState']}")
     assert retail_ir_check['elements'] == 1708, "Retail load in Indigo Rose failed"
     assert retail_ir_check['theme'] == 'indigo-rose', "Theme unexpectedly changed during upload"
 
@@ -430,17 +431,17 @@ def run_theme_tests(client, project_dir):
     retail_ec_check = client.evaluate("""({
         elements: state.data.elements.length,
         theme: document.documentElement.getAttribute('data-theme'),
-        isCustom: state.isCustomLoaded
+        appState: state.appState
     })""")
-    print(f"Retail in Electric Canary: elements={retail_ec_check['elements']}, theme={retail_ec_check['theme']}, isCustom={retail_ec_check['isCustom']}")
+    print(f"Retail in Electric Canary: elements={retail_ec_check['elements']}, theme={retail_ec_check['theme']}, appState={retail_ec_check['appState']}")
     assert retail_ec_check['elements'] == 1708, "Retail elements lost when switching theme"
 
-    # Reset back to default Healthcare
-    client.evaluate("document.getElementById('reset-default-pcf-btn').click()")
-    time.sleep(0.3)
+    # Restore Healthcare PCF
+    healthcare_path = os.path.join(project_dir, "K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx")
+    load_workbook(client, healthcare_path)
     restored = client.evaluate("state.data.elements.length")
-    print(f"Restored dataset to default: elements={restored}")
-    assert restored == 1985, "Failed to restore Healthcare default dataset"
+    print(f"Restored dataset: elements={restored}")
+    assert restored == 1985, "Failed to restore Healthcare PCF"
 
     # 7. Scrolling intact across themes
     print("\n--- Scrolling Intact Across Themes ---")

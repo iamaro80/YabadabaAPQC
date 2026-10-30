@@ -28,12 +28,14 @@ from browser_tests.cdp_client import (
     get_websocket_url,
     CDPClient
 )
+from browser_tests.test_empty_start import run_empty_start_tests
 from browser_tests.test_data import run_data_tests
 from browser_tests.test_layout import run_layout_tests
 from browser_tests.test_scaling import run_scaling_tests
 from browser_tests.test_storage import run_storage_tests
 from browser_tests.test_escaping import run_escaping_tests
 from browser_tests.test_themes import run_theme_tests
+from browser_tests.test_multi_workbook import run_multi_workbook_tests
 
 SCREENSHOTS_DIR = os.path.join(PROJECT_DIR, "docs", "screenshots")
 
@@ -53,6 +55,11 @@ def run_all():
         print("Waiting for page load and initialization...")
         client.wait_for_load()
         client.set_viewport(1440, 900)
+
+        # 0. Empty start & State Machine & View Registry Suite
+        run_empty_start_tests(client, PROJECT_DIR)
+
+        # Configure default layout with Healthcare loaded
         client.evaluate("localStorage.clear(); toggleSidebar(true); toggleInspector(true); applyTheme('dark'); setTextScale(1.0);")
         time.sleep(0.3)
 
@@ -63,6 +70,7 @@ def run_all():
         run_storage_tests(client)
         run_escaping_tests(client, PROJECT_DIR)
         run_theme_tests(client, PROJECT_DIR)
+        run_multi_workbook_tests(client, PROJECT_DIR)
 
         # Check for console errors
         print(f"\nConsole Errors Count: {len(client.console_errors)}")

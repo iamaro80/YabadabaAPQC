@@ -8,6 +8,7 @@ import time
 import base64
 import openpyxl
 import shutil
+from browser_tests.cdp_client import load_workbook
 
 def run_escaping_tests(client, project_dir):
     print("\n" + "="*70)
@@ -63,9 +64,8 @@ def run_escaping_tests(client, project_dir):
     assert not jump_test['xssFired'], "XSS script executed during jumpToElement!"
     assert "XSS" in jump_test['titleText'], "Malicious element title failed to render"
 
-    # Restore default PCF
-    client.evaluate("document.getElementById('reset-default-pcf-btn').click()")
-    time.sleep(0.3)
+    # Restore Healthcare PCF
+    load_workbook(client, src_xlsx)
     assert client.evaluate("state.data.elements.length") == 1985
 
     # 2. Item 1 Security Test: Category ID Validation & Attribute Injection Prevention
@@ -167,8 +167,7 @@ def run_escaping_tests(client, project_dir):
         if (window.__orig_alert) window.alert = window.__orig_alert;
         delete window.__alert_called;
         delete window.__xss_category;
-        document.getElementById('reset-default-pcf-btn').click();
     })()""")
-    time.sleep(0.3)
+    load_workbook(client, src_xlsx)
     assert client.evaluate("state.data.elements.length") == 1985
     print("Category ID security verification passed completely.")

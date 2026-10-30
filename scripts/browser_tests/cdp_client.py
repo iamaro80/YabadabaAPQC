@@ -99,6 +99,7 @@ class CDPClient:
         self.ws = websocket.create_connection(ws_url, timeout=30)
         self.msg_id = 0
         self.console_errors = []
+        self.network_requests = []
         self.screenshots_dir = screenshots_dir
 
     def send(self, method, params=None):
@@ -112,6 +113,8 @@ class CDPClient:
                 if msg["method"] == "Runtime.consoleAPICalled":
                     if msg["params"]["type"] == "error":
                         self.console_errors.append(msg["params"])
+                elif msg["method"] == "Network.requestWillBeSent":
+                    self.network_requests.append(msg["params"]["request"]["url"])
                 continue
             if msg.get("id") == self.msg_id:
                 if "error" in msg:
@@ -155,20 +158,75 @@ class CDPClient:
     def wait_for_load(self):
         self.send("Page.enable")
         self.send("Runtime.enable")
+        self.send("Network.enable")
         t_start = time.time()
         ready = False
         while time.time() - t_start < 15:
-            time.sleep(0.4)
+            time.sleep(0.3)
             try:
-                res = self.evaluate("Boolean(window.state && window.state.data && window.state.data.elements)")
+                res = self.evaluate("Boolean(window.state && window.state.appState)")
                 if res:
                     ready = True
                     break
             except Exception:
                 pass
         if not ready:
-            raise RuntimeError("Page did not load window.state.data within 15 seconds")
-        time.sleep(0.5)
+            raise RuntimeError("Page did not initialize window.state within 15 seconds")
+        time.sleep(0.3)
 
     def close(self):
         self.ws.close()
+
+def load_workbook(client, workbook_path, via_drop=False):
+    filename = os.path.basename(workbook_path)
+    with open(workbook_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("ascii")
+
+    if via_drop:
+        client.evaluate(f"""(() => {{
+            const bin = atob("{b64}");
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const file = new File([bytes], "{filename}", {{ type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }});
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const dropZone = document.getElementById("empty-drop-zone");
+            if (dropZone) {{
+                const evt = new DragEvent("drop", {{ dataTransfer: dt, bubbles: true, cancelable: true }});
+                dropZone.dispatchEvent(evt);
+            }} else {{
+                handleFileSelection(file);
+            }}
+        }})()""")
+        t0 = time.time()
+        while time.time() - t0 < 10:
+            time.sleep(0.1)
+            opened = client.evaluate("Boolean(document.getElementById('upload-modal-container') && document.getElementById('upload-modal-container').style.display !== 'none')")
+            if opened:
+                break
+        client.evaluate("document.getElementById('confirm-upload-btn').click()")
+    else:
+        client.evaluate(f"""(() => {{
+            const bin = atob("{b64}");
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            pendingWorkbookBuffer = bytes;
+            pendingFileName = "{filename}";
+            openUploadModal(bytes, "{filename}");
+            document.getElementById('confirm-upload-btn').click();
+        }})()""")
+
+    t0 = time.time()
+    while time.time() - t0 < 20:
+        time.sleep(0.15)
+        st = client.evaluate("window.state ? window.state.appState : null")
+        if st == "Loaded":
+            break
+    time.sleep(0.3)
+    current_st = client.evaluate("window.state ? window.state.appState : null")
+    assert current_st == "Loaded", f"Failed to load workbook {filename}: state is {current_st}"
+
+def close_workbook(client):
+    client.evaluate("document.getElementById('close-workbook-btn').click()")
+    time.sleep(0.2)
+

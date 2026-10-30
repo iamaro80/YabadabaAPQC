@@ -630,6 +630,175 @@
       color: var(--accent-text) !important;
     }
 
+    /* Empty State Screen */
+    .empty-state-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 0;
+      min-height: 0;
+      height: calc(100vh - var(--header-height));
+      padding: 2rem 1.5rem;
+      overflow-y: auto;
+      background-color: var(--bg-app);
+      box-sizing: border-box;
+    }
+    .empty-state-card {
+      max-width: 40rem;
+      width: 100%;
+      background-color: var(--bg-panel);
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 3rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: var(--shadow-modal);
+      transition: border-color var(--transition-fast), background-color var(--transition-fast);
+      box-sizing: border-box;
+    }
+    .empty-state-card:hover,
+    .empty-state-card.drag-over {
+      border-color: var(--accent);
+      background-color: var(--bg-selected);
+    }
+    .empty-state-icon-wrapper {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background-color: var(--bg-app);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      color: var(--accent);
+    }
+    .empty-state-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .empty-state-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.75rem;
+      max-width: 30rem;
+    }
+    .empty-state-drop-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+      width: 100%;
+    }
+    .empty-state-drop-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .empty-state-or {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .empty-load-btn {
+      height: 2.25rem !important;
+      padding: 0 1.5rem !important;
+      font-size: 0.88rem !important;
+      border-radius: var(--radius-sm) !important;
+      cursor: pointer;
+    }
+    .empty-supported-info {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background-color: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      line-height: 1.45;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    .empty-supported-info code {
+      font-family: var(--font-mono);
+      background-color: var(--bg-panel);
+      padding: 0.1rem 0.3rem;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+    }
+    .empty-state-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 250;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+      box-shadow: var(--shadow-modal);
+      max-width: 24rem;
+      text-align: center;
+    }
+    .loading-spinner {
+      width: 2.25rem;
+      height: 2.25rem;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .loading-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
     /* Workspace */
     .workspace {
       display: flex;
@@ -2011,21 +2180,21 @@
     <!-- Slim Header (44px) -->
     <header class="app-header">
       <div class="header-left">
-        <button class="panel-toggle-btn" id="toggle-sidebar-btn" title="Toggle sidebar ([)" aria-label="Toggle sidebar">
+        <button class="panel-toggle-btn" id="toggle-sidebar-btn" title="Toggle sidebar ([)" aria-label="Toggle sidebar" style="display:none;">
           <svg class="icon"><use href="#icon-sidebar-toggle"/></svg>
         </button>
         <svg class="header-logo" role="img" aria-label="YabadabaAPQC logo"><use href="#logo-mark"/></svg>
         <div class="brand-group">
           <span class="brand-title">YabadabaAPQC</span>
-          <div class="framework-title-group">
-            <span class="framework-title" id="header-framework-title">Sample data: Healthcare Provider</span>
+          <div class="framework-title-group" style="display:none;">
+            <span class="framework-title" id="header-framework-title"></span>
             <span class="framework-version" id="header-version-badge" style="display:none;"></span>
           </div>
         </div>
       </div>
 
       <!-- Live Search Box -->
-      <div class="header-search">
+      <div class="header-search" style="display:none;">
         <svg class="search-icon"><use href="#icon-search"/></svg>
         <input type="text" id="global-search" placeholder="Search processes, PCF IDs, terms..." autocomplete="off" aria-label="Search processes">
         <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search">
@@ -2034,12 +2203,8 @@
         <span class="search-key-hint">/</span>
       </div>
 
-      <!-- View Switcher Tabs -->
-      <nav class="view-tabs" aria-label="Application views">
-        <button class="view-tab-btn active" data-view="explorer">Explorer</button>
-        <button class="view-tab-btn" data-view="matrix">Change matrix</button>
-        <button class="view-tab-btn" data-view="analytics">Analytics</button>
-        <button class="view-tab-btn" data-view="glossary">Glossary</button>
+      <!-- View Switcher Tabs (Built dynamically from viewRegistry) -->
+      <nav class="view-tabs" id="view-tabs-nav" aria-label="Application views" style="display:none;">
       </nav>
 
       <!-- Header Action Buttons -->
@@ -2053,16 +2218,16 @@
           <button id="text-size-inc-btn" class="text-scale-btn" title="Increase text size (Ctrl + =)" aria-label="Increase text size">A+</button>
         </div>
 
-        <button id="upload-pcf-btn" class="action-btn action-btn-primary" title="Load an APQC PCF workbook (.xlsx)">
+        <button id="upload-pcf-btn" class="action-btn action-btn-primary" style="display:none;" title="Load an APQC PCF workbook (.xlsx)">
           <svg class="icon"><use href="#icon-upload"/></svg>
           <span>Load workbook</span>
         </button>
-        <button id="reset-default-pcf-btn" class="action-btn" style="display:none;" title="Back to sample data" aria-label="Back to sample data">
-          <svg class="icon"><use href="#icon-reset"/></svg>
-          <span>Back to sample data</span>
+        <button id="close-workbook-btn" class="action-btn" style="display:none;" title="Close workbook" aria-label="Close workbook">
+          <svg class="icon"><use href="#icon-close"/></svg>
+          <span>Close workbook</span>
         </button>
-        <input type="file" id="pcf-file-input" accept=".xlsx" style="display:none;" aria-label="PCF workbook file input">
-        <button id="export-csv-btn" class="action-btn action-btn-icon" title="Export current view to CSV" aria-label="Export current view to CSV">
+        <input type="file" id="pcf-file-input" accept=".xlsx,.xls" style="display:none;" aria-label="PCF workbook file input">
+        <button id="export-csv-btn" class="action-btn action-btn-icon" style="display:none;" title="Export current view to CSV" aria-label="Export current view to CSV">
           <svg class="icon"><use href="#icon-jump"/></svg>
         </button>
         
@@ -2097,13 +2262,46 @@
       </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="workspace">
+    <!-- Empty State Screen -->
+    <div id="empty-state-screen" class="empty-state-container" role="main" aria-label="Load an APQC PCF workbook">
+      <div class="empty-state-card" id="empty-drop-zone" tabindex="0" role="region" aria-label="Drop workbook zone">
+        <div class="empty-state-icon-wrapper">
+          <svg class="icon empty-state-icon" aria-hidden="true"><use href="#icon-upload"/></svg>
+        </div>
+        <h1 class="empty-state-title">YabadabaAPQC</h1>
+        <p class="empty-state-subtitle">Modern browser-based explorer and change analyzer for APQC Process Classification Framework (PCF) workbooks.</p>
+        
+        <div class="empty-state-drop-prompt">
+          <p class="empty-state-drop-text">Drag &amp; drop your APQC Excel workbook (.xlsx) here</p>
+          <span class="empty-state-or">or</span>
+          <button id="empty-load-btn" class="action-btn action-btn-primary empty-load-btn" type="button" aria-label="Load workbook from computer">
+            <svg class="icon"><use href="#icon-upload"/></svg>
+            <span>Load workbook…</span>
+          </button>
+        </div>
+
+        <div class="empty-supported-info">
+          <strong>Supported workbooks:</strong> APQC PCF Excel files (.xlsx) containing a <code>Combined</code> sheet (e.g. Cross-Industry, Healthcare, Retail, City Government, Health Insurance Payor, Consumer Products).
+        </div>
+
+        <div class="empty-state-footer">
+          <div class="empty-disclaimer">
+            YabadabaAPQC is an independent tool. It is not affiliated with or endorsed by APQC.
+          </div>
+          <div class="empty-attribution">
+            All Process Classification Framework® (PCF) content is the intellectual property of APQC (or APQC and IBM).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace (Hidden when Empty) -->
+    <div class="workspace" id="workspace-container" style="display:none;">
       <!-- Left Rail (Categories) -->
       <aside class="sidebar" id="app-sidebar" aria-label="Process categories">
         <div class="sidebar-header">
           <h2 id="sidebar-heading">Categories</h2>
-          <span class="sidebar-count-badge" id="sidebar-total-badge">1,985 total</span>
+          <span class="sidebar-count-badge" id="sidebar-total-badge"></span>
         </div>
         <div class="sidebar-content" id="sidebar-categories-list">
           <!-- Populated dynamically via JS -->
@@ -2261,11 +2459,11 @@
           </div>
         </section>
 
-        <!-- View 4: Glossary Terms View -->
-        <section id="view-glossary" class="view-panel" style="display:none;" aria-label="Glossary definitions">
+        <!-- View 4: Process Definitions View -->
+        <section id="view-glossary" class="view-panel" style="display:none;" aria-label="Process definitions">
           <div class="explorer-toolbar">
             <div class="toolbar-left">
-              <span style="font-weight:600; font-size:0.8rem;">Glossary of process definitions</span>
+              <span style="font-weight:600; font-size:0.8rem;">Process definitions</span>
               <span class="visible-count-text" id="glossary-subtitle">Defined standard terms</span>
             </div>
             <div class="toolbar-right">
@@ -2370,8 +2568,14 @@
   <!-- Toast Notification Container -->
   <div id="pcf-toast" class="pcf-toast"></div>
 
-  <!-- Load PCF Dataset from JS (Works offline via file:// protocol) -->
-  <script src="data/pcf_data.js"></script>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" style="display:none;">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <div class="loading-title">Parsing APQC workbook…</div>
+      <div class="loading-desc" id="loading-desc-text">Reading worksheets, extracting hierarchy, and validating elements…</div>
+    </div>
+  </div>
 
   <script>
     /*
@@ -2417,7 +2621,10 @@
 
     // State Management
     const state = {
+      appState: "Empty", // "Empty" | "Loading" | "Loaded"
       data: null,
+      previousData: null,
+      capabilities: null,
       activeView: "explorer",
       selectedCategoryId: "1",
       selectedElement: null,
@@ -2454,7 +2661,6 @@
       elemDistinctive: null,
       _indexBuildTimeMs: 0,
       _firstRenderTimeMs: 0,
-      isCustomLoaded: false,
       isSingleVersion: false
     };
     window.state = state;
@@ -2707,8 +2913,8 @@
     // App Initialization
     document.addEventListener("DOMContentLoaded", () => {
       initTheme();
-      initData();
       initEvents();
+      setAppState("Empty");
     });
 
     const ALLOWED_THEMES = ["dark", "light", "indigo-rose", "electric-canary"];
@@ -2834,70 +3040,259 @@
     window.setTextScale = setTextScale;
     window.stepTextScale = stepTextScale;
 
-    function initData() {
-      if (window.PCF_DATA) {
-        state.data = window.PCF_DATA;
-        buildApp();
+    /* Capabilities Computation (From loaded data) */
+    function computeCapabilities(dataset) {
+      if (!dataset || !dataset.elements) {
+        return {
+          definitions: 0,
+          metrics: 0,
+          metricsFlag: false,
+          changes: false,
+          levels: 1,
+          version: { label: null, comparedTo: null, generatedOn: null }
+        };
+      }
+      const elements = dataset.elements;
+      const meta = dataset.metadata || {};
+      const defCount = elements.filter(e => e.definition && e.definition.trim().length > 0).length;
+      const metricRowsCount = (meta.total_metric_records !== undefined) 
+        ? meta.total_metric_records 
+        : elements.reduce((acc, e) => acc + (e.metrics ? e.metrics.length : 0), 0);
+      const hasMetricsFlag = elements.some(e => Boolean(e.metrics_available));
+      const hasChanges = elements.some(e => Boolean(e.has_changes));
+      const maxLevel = elements.reduce((max, e) => Math.max(max, e.level || 1), 1);
+      
+      return {
+        definitions: defCount,
+        metrics: metricRowsCount,
+        metricsFlag: hasMetricsFlag,
+        changes: hasChanges,
+        levels: maxLevel,
+        version: {
+          label: meta.version_label || meta.version || null,
+          comparedTo: meta.compared_to || null,
+          generatedOn: meta.generated_on || null
+        }
+      };
+    }
+    window.computeCapabilities = computeCapabilities;
+
+    /* View Registry (Item 2.4) */
+    const viewRegistry = [];
+
+    function registerView(viewDef) {
+      if (!viewDef || !viewDef.id) return;
+      const existingIdx = viewRegistry.findIndex(v => v.id === viewDef.id);
+      const entry = {
+        id: viewDef.id,
+        label: viewDef.label || viewDef.id,
+        requires: typeof viewDef.requires === "function" ? viewDef.requires : (() => true),
+        render: typeof viewDef.render === "function" ? viewDef.render : (() => {})
+      };
+      if (existingIdx >= 0) {
+        viewRegistry[existingIdx] = entry;
       } else {
-        fetch("data/pcf_data.json")
-          .then(res => res.json())
-          .then(data => {
-            state.data = data;
-            buildApp();
-          })
-          .catch(err => {
-            console.warn("Dataset load error:", err.message);
-            document.getElementById("main-view-container").innerHTML = `
-              <div style="padding: 3rem; text-align: center; color: var(--status-removed);">
-                <h2>Unable to load PCF dataset</h2>
-                <p style="margin-top:0.5rem; color:var(--text-muted);">Ensure <code>data/pcf_data.js</code> or <code>data/pcf_data.json</code> is accessible.</p>
-              </div>`;
-          });
+        viewRegistry.push(entry);
+      }
+      if (state.appState === "Loaded" && state.capabilities) {
+        updateNavigationTabs();
       }
     }
+    window.registerView = registerView;
+    window.viewRegistry = viewRegistry;
+
+    function getAvailableViews() {
+      if (!state.capabilities) return [];
+      return viewRegistry.filter(v => v.requires(state.capabilities));
+    }
+    window.getAvailableViews = getAvailableViews;
+
+    function updateNavigationTabs() {
+      const nav = document.getElementById("view-tabs-nav");
+      if (!nav) return;
+      nav.innerHTML = "";
+
+      const available = getAvailableViews();
+      if (!available.some(v => v.id === state.activeView)) {
+        state.activeView = "explorer";
+      }
+
+      available.forEach(view => {
+        const btn = document.createElement("button");
+        btn.className = `view-tab-btn ${state.activeView === view.id ? "active" : ""}`;
+        btn.setAttribute("data-view", view.id);
+        btn.textContent = view.label;
+        btn.addEventListener("click", () => switchView(view.id));
+        nav.appendChild(btn);
+      });
+    }
+
+    // Register canonical views
+    registerView({
+      id: "explorer",
+      label: "Explorer",
+      requires: () => true,
+      render: () => {
+        renderCategoryHero();
+        renderExplorerNodes();
+      }
+    });
+
+    registerView({
+      id: "matrix",
+      label: "Change matrix",
+      requires: c => Boolean(c && c.changes),
+      render: () => {
+        renderMatrixTable();
+      }
+    });
+
+    registerView({
+      id: "analytics",
+      label: "Analytics",
+      requires: () => true,
+      render: () => {
+        renderAnalyticsDashboard();
+      }
+    });
+
+    registerView({
+      id: "glossary",
+      label: "Definitions",
+      requires: c => Boolean(c && c.definitions > 0),
+      render: () => {
+        renderGlossaryView();
+      }
+    });
+
+    /* App Shell State Machine (Empty, Loading, Loaded) */
+    function setAppState(newState, payload = {}) {
+      const oldState = state.appState;
+      state.appState = newState;
+      document.body.setAttribute("data-app-state", newState);
+
+      const emptyScreen = document.getElementById("empty-state-screen");
+      const workspaceEl = document.getElementById("workspace-container") || document.querySelector(".workspace");
+      const loadingOverlay = document.getElementById("loading-overlay");
+
+      const toggleSidebarBtn = document.getElementById("toggle-sidebar-btn");
+      const frameworkTitleGroup = document.querySelector(".framework-title-group");
+      const headerSearch = document.querySelector(".header-search");
+      const viewTabsNav = document.getElementById("view-tabs-nav");
+      const uploadBtn = document.getElementById("upload-pcf-btn");
+      const closeWorkbookBtn = document.getElementById("close-workbook-btn");
+      const exportCsvBtn = document.getElementById("export-csv-btn");
+
+      if (newState === "Empty") {
+        if (loadingOverlay) loadingOverlay.style.display = "none";
+        if (emptyScreen) emptyScreen.style.display = "flex";
+        if (workspaceEl) workspaceEl.style.display = "none";
+
+        if (toggleSidebarBtn) toggleSidebarBtn.style.display = "none";
+        if (frameworkTitleGroup) frameworkTitleGroup.style.display = "none";
+        if (headerSearch) headerSearch.style.display = "none";
+        if (viewTabsNav) viewTabsNav.style.display = "none";
+        if (uploadBtn) uploadBtn.style.display = "none";
+        if (closeWorkbookBtn) closeWorkbookBtn.style.display = "none";
+        if (exportCsvBtn) exportCsvBtn.style.display = "none";
+
+        document.title = "YabadabaAPQC";
+
+        state.data = null;
+        state.previousData = null;
+        state.capabilities = null;
+        state.selectedElement = null;
+        state.searchQuery = "";
+        const searchInput = document.getElementById("global-search");
+        if (searchInput) searchInput.value = "";
+
+        if (window.location.hash) {
+          try {
+            history.replaceState(null, "", window.location.pathname + window.location.search);
+          } catch (e) {}
+        }
+      } else if (newState === "Loading") {
+        if (loadingOverlay) {
+          loadingOverlay.style.display = "flex";
+          const descEl = document.getElementById("loading-desc-text");
+          if (descEl && payload.message) descEl.textContent = payload.message;
+        }
+      } else if (newState === "Loaded") {
+        if (loadingOverlay) loadingOverlay.style.display = "none";
+        if (emptyScreen) emptyScreen.style.display = "none";
+        if (workspaceEl) workspaceEl.style.display = "flex";
+
+        if (toggleSidebarBtn) toggleSidebarBtn.style.display = "flex";
+        if (frameworkTitleGroup) frameworkTitleGroup.style.display = "flex";
+        if (headerSearch) headerSearch.style.display = "block";
+        if (viewTabsNav) viewTabsNav.style.display = "flex";
+        if (uploadBtn) uploadBtn.style.display = "inline-flex";
+        if (closeWorkbookBtn) closeWorkbookBtn.style.display = "inline-flex";
+        if (exportCsvBtn) exportCsvBtn.style.display = "inline-flex";
+
+        if (!payload.isRestoring) {
+          state.capabilities = computeCapabilities(state.data);
+          buildApp();
+        }
+      }
+    }
+    window.setAppState = setAppState;
+
+    function handleLoadFailure(errorMessage, fileName = "") {
+      const activeData = state.data || state.previousData;
+      if (activeData) {
+        state.data = activeData;
+        state.capabilities = computeCapabilities(state.data);
+        setAppState("Loaded", { isRestoring: true });
+      } else {
+        state.data = null;
+        state.capabilities = null;
+        setAppState("Empty");
+      }
+      showUploadModalError(errorMessage, fileName);
+    }
+    window.handleLoadFailure = handleLoadFailure;
+
+    function closeWorkbook() {
+      setAppState("Empty");
+      showToast("Workbook closed");
+    }
+    window.closeWorkbook = closeWorkbook;
 
     function buildApp() {
+      if (!state.data) return;
       const t0 = performance.now();
-      // Clear cached maps
       state._childrenMap = null;
       state._byHidMap = null;
       state._byIdMap = null;
 
+      if (!state.capabilities) {
+        state.capabilities = computeCapabilities(state.data);
+      }
+
       const meta = state.data.metadata || {};
       const totalElems = meta.total_elements || state.data.elements.length;
-      const totalNew = meta.total_new || state.data.elements.filter(e => e.is_new).length;
-      const totalRenamed = meta.total_renamed || state.data.elements.filter(e => e.is_renamed).length;
-      const totalMetrics = meta.total_with_metrics || state.data.elements.filter(e => e.metrics_available).length;
-      const totalChanges = meta.total_with_changes || state.data.elements.filter(e => e.has_changes).length;
-      const totalDefs = state.data.elements.filter(e => e.definition && e.definition.trim().length > 0).length;
+      const totalNew = meta.total_new !== undefined ? meta.total_new : state.data.elements.filter(e => e.is_new).length;
+      const totalRenamed = meta.total_renamed !== undefined ? meta.total_renamed : state.data.elements.filter(e => e.is_renamed).length;
+      const totalMetrics = meta.total_with_metrics !== undefined ? meta.total_with_metrics : state.data.elements.filter(e => e.metrics_available).length;
+      const totalChanges = meta.total_with_changes !== undefined ? meta.total_with_changes : state.data.elements.filter(e => e.has_changes).length;
+      const totalDefs = state.capabilities.definitions;
 
       // Update Header Titles and Version
       const titleEl = document.getElementById("header-framework-title");
       const verEl = document.getElementById("header-version-badge");
-      if (!state.isCustomLoaded) {
-        if (titleEl) titleEl.textContent = "Sample data: Healthcare Provider";
-        if (verEl) {
-          verEl.textContent = "";
-          verEl.style.display = "none";
-        }
-        document.title = "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1";
-      } else {
-        if (titleEl) titleEl.textContent = meta.framework || "APQC Process Classification Framework";
-        if (verEl) {
-          verEl.textContent = meta.version || "";
-          verEl.style.display = meta.version ? "inline" : "none";
-        }
-        const fwName = meta.framework || "APQC Process Classification Framework";
-        const fwVer = meta.version || "";
-        document.title = `YabadabaAPQC · ${fwName} ${fwVer}`.trim();
-      }
+      const fwName = meta.framework || "APQC Process Classification Framework";
+      const fwVer = state.capabilities.version.label || meta.version || "";
 
-      // Reset to default button
-      const resetBtn = document.getElementById("reset-default-pcf-btn");
-      if (resetBtn) resetBtn.style.display = state.isCustomLoaded ? "inline-flex" : "none";
+      if (titleEl) titleEl.textContent = fwName;
+      if (verEl) {
+        verEl.textContent = fwVer;
+        verEl.style.display = fwVer ? "inline" : "none";
+      }
+      document.title = `YabadabaAPQC · ${fwName} ${fwVer}`.trim();
 
       // Attribution Notice in footer
-      const attr = meta.attribution || '©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.';
+      const attr = meta.attribution || '©2026 APQC. ALL RIGHTS RESERVED.';
       const footerEl = document.getElementById("footer-attribution");
       if (footerEl) footerEl.textContent = attr;
 
@@ -2924,7 +3319,7 @@
       const kpiRenamed = document.getElementById("dash-kpi-renamed");
       if (kpiRenamed) kpiRenamed.textContent = totalRenamed.toLocaleString();
       const kpiMetrics = document.getElementById("dash-kpi-metrics");
-      if (kpiMetrics) kpiMetrics.textContent = totalMetrics.toLocaleString();
+      if (kpiMetrics) kpiMetrics.textContent = (state.capabilities.metrics > 0 ? state.capabilities.metrics : totalMetrics).toLocaleString();
       const kpiSubNew = document.getElementById("dash-kpi-sub-new");
       if (kpiSubNew) {
         kpiSubNew.textContent = totalElems > 0 ? `${((totalNew / totalElems) * 100).toFixed(1)}% modernized in this release` : "";
@@ -2935,12 +3330,18 @@
         glossSub.textContent = `${totalDefs.toLocaleString()} defined process terms`;
       }
 
-      // Single-version mode defensive handling
-      state.isSingleVersion = Boolean(meta.is_single_version || (totalChanges === 0 && totalNew === 0));
-      const matrixTab = document.querySelector('.view-tab-btn[data-view="matrix"]');
-      if (matrixTab) matrixTab.style.display = state.isSingleVersion ? "none" : "";
+      // Update Navigation Tabs from registry
+      updateNavigationTabs();
+
+      // Change pills in explorer toolbar
       const changePills = document.querySelectorAll('.filter-pill[data-filter="changes"], .filter-pill[data-filter="new"], .filter-pill[data-filter="renamed"]');
-      changePills.forEach(p => p.style.display = state.isSingleVersion ? "none" : "");
+      changePills.forEach(p => p.style.display = state.capabilities.changes ? "" : "none");
+
+      // Benchmarking metrics filter pill
+      const benchmarkingPill = document.querySelector('.filter-pill[data-filter="metrics"]');
+      if (benchmarkingPill) {
+        benchmarkingPill.style.display = (state.capabilities.metrics > 0 || state.capabilities.metricsFlag) ? "" : "none";
+      }
 
       // Build distinctive term index
       buildTermIndex();
@@ -3207,7 +3608,7 @@
       document.getElementById("close-inspector-btn").addEventListener("click", () => toggleInspector(false));
       document.getElementById("reopen-inspector-tab").addEventListener("click", () => toggleInspector(true));
 
-      // Upload buttons
+      // Upload & Close buttons
       const uploadBtn = document.getElementById("upload-pcf-btn");
       const fileInput = document.getElementById("pcf-file-input");
       if (uploadBtn && fileInput) {
@@ -3220,17 +3621,45 @@
         });
       }
 
-      // Reset default dataset
-      document.getElementById("reset-default-pcf-btn").addEventListener("click", () => {
-        if (window.PCF_DATA) {
-          state.data = window.PCF_DATA;
-          state.isCustomLoaded = false;
-          buildApp();
-          showToast("Default dataset restored");
-        }
-      });
+      document.getElementById("close-workbook-btn")?.addEventListener("click", closeWorkbook);
+      document.getElementById("empty-load-btn")?.addEventListener("click", () => fileInput?.click());
 
-      // Drag and drop
+      // Empty drop zone keyboard & drag-drop interactions
+      const emptyDropZone = document.getElementById("empty-drop-zone");
+      if (emptyDropZone && fileInput) {
+        emptyDropZone.addEventListener("click", (e) => {
+          if (!e.target.closest("#empty-load-btn")) {
+            fileInput.click();
+          }
+        });
+        emptyDropZone.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fileInput.click();
+          }
+        });
+        emptyDropZone.addEventListener("dragenter", (e) => {
+          e.preventDefault();
+          emptyDropZone.classList.add("drag-over");
+        });
+        emptyDropZone.addEventListener("dragleave", (e) => {
+          e.preventDefault();
+          emptyDropZone.classList.remove("drag-over");
+        });
+        emptyDropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          emptyDropZone.classList.add("drag-over");
+        });
+        emptyDropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          emptyDropZone.classList.remove("drag-over");
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileSelection(e.dataTransfer.files[0]);
+          }
+        });
+      }
+
+      // Full screen Drag and drop
       const dragOverlay = document.getElementById("drag-drop-overlay");
       let dragCounter = 0;
       window.addEventListener("dragenter", (e) => {
@@ -3261,28 +3690,31 @@
       document.getElementById("cancel-upload-btn").addEventListener("click", closeUploadModal);
       document.getElementById("confirm-upload-btn").addEventListener("click", () => {
         if (!pendingWorkbookBuffer) return;
-        try {
-          const nameInput = document.getElementById("modal-framework-name");
-          const verInput = document.getElementById("modal-framework-version");
-          const checkedBoxes = document.querySelectorAll("#modal-op-cats-container input[type='checkbox']:checked");
-          const selectedOp = new Set(Array.from(checkedBoxes).map(cb => cb.value));
+        setAppState("Loading");
+        setTimeout(() => {
+          try {
+            const nameInput = document.getElementById("modal-framework-name");
+            const verInput = document.getElementById("modal-framework-version");
+            const checkedBoxes = document.querySelectorAll("#modal-op-cats-container input[type='checkbox']:checked");
+            const selectedOp = new Set(Array.from(checkedBoxes).map(cb => cb.value));
 
-          const parsed = parsePCFWorkbook(pendingWorkbookBuffer, {
-            fileName: pendingFileName,
-            frameworkName: nameInput.value.trim() || "APQC Process Classification Framework",
-            version: verInput.value.trim() || "v7.2.1",
-            operatingCategories: selectedOp
-          });
+            const parsed = parsePCFWorkbook(pendingWorkbookBuffer, {
+              fileName: pendingFileName,
+              frameworkName: nameInput ? nameInput.value.trim() : "",
+              version: verInput ? verInput.value.trim() : "",
+              operatingCategories: selectedOp
+            });
 
-          state.data = parsed;
-          state.isCustomLoaded = true;
-          closeUploadModal();
-          buildApp();
-          showToast("Workbook loaded");
-        } catch (err) {
-          console.warn("Workbook parse error:", err.message);
-          showToast(`Error processing workbook: ${err.message}`, true);
-        }
+            closeUploadModal();
+            state.previousData = state.data;
+            state.data = parsed;
+            setAppState("Loaded");
+            showToast("Workbook loaded");
+          } catch (err) {
+            console.warn("Workbook parse error:", err.message);
+            handleLoadFailure(err.message, pendingFileName);
+          }
+        }, 20);
       });
 
       // Export CSV
@@ -3321,15 +3753,51 @@
     }
 
     function switchView(viewName, shouldUpdateHash = true) {
-      state.activeView = viewName;
-      document.querySelectorAll(".view-panel").forEach(p => p.style.display = "none");
-      const target = document.getElementById(`view-${viewName}`);
-      if (target) {
-        target.style.display = "flex";
+      if (state.appState !== "Loaded") return;
+      const available = getAvailableViews();
+      let targetView = available.find(v => v.id === viewName);
+      if (!targetView) {
+        targetView = available.find(v => v.id === "explorer") || available[0];
       }
-      document.querySelectorAll(".view-tab-btn").forEach(b => {
-        b.classList.toggle("active", b.getAttribute("data-view") === viewName);
+      if (!targetView) return;
+
+      state.activeView = targetView.id;
+
+      // Hide all view panels
+      document.querySelectorAll(".view-panel").forEach(p => {
+        p.style.display = "none";
       });
+
+      // Ensure target view panel exists (creates on demand for dynamically added views)
+      let targetEl = document.getElementById(`view-${targetView.id}`);
+      if (!targetEl) {
+        targetEl = document.createElement("section");
+        targetEl.id = `view-${targetView.id}`;
+        targetEl.className = "view-panel";
+        targetEl.setAttribute("aria-label", targetView.label);
+        const mainContainer = document.getElementById("main-view-container");
+        const footer = document.getElementById("app-footer");
+        if (footer && footer.parentNode === mainContainer) {
+          mainContainer.insertBefore(targetEl, footer);
+        } else if (mainContainer) {
+          mainContainer.appendChild(targetEl);
+        }
+      }
+
+      if (targetEl) {
+        targetEl.style.display = "flex";
+      }
+
+      // Update tabs active state
+      document.querySelectorAll(".view-tab-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-view") === targetView.id);
+      });
+
+      // Invoke render callback
+      if (typeof targetView.render === "function") {
+        targetView.render(targetEl);
+      }
+
       if (shouldUpdateHash) {
         updateHash();
       }
@@ -3900,7 +4368,8 @@
 
       // Status subline text
       let statusText = "Unchanged from previous version";
-      if (elem.is_new) statusText = "New element in v7.2.1";
+      const verLabel = (state.data && state.data.metadata && (state.data.metadata.version_label || state.data.metadata.version)) || "v7.2.1";
+      if (elem.is_new) statusText = `New element in ${escapeHtml(verLabel)}`;
       else if (elem.is_renamed) statusText = `Renamed (was: ${escapeHtml(elem.renamed_was || "renamed")})`;
 
       // Key distinctive terms (Item 5: at most 5, data-term attribute)
@@ -3913,6 +4382,45 @@
           </div>
         </div>
       ` : "";
+
+      // Benchmarking metrics (when elem.metrics && elem.metrics.length > 0)
+      let metricsHtml = "";
+      if (elem.metrics && elem.metrics.length > 0) {
+        const byCat = new Map();
+        elem.metrics.forEach(m => {
+          const cat = m.category || "General";
+          if (!byCat.has(cat)) byCat.set(cat, []);
+          byCat.get(cat).push(m);
+        });
+
+        let catBlocks = "";
+        byCat.forEach((metricList, catName) => {
+          catBlocks += `
+            <div class="metrics-cat-group" style="margin-bottom:0.6rem;">
+              <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.25rem;">${escapeHtml(catName)}</div>
+              ${metricList.map(m => `
+                <div class="metric-item-card" style="padding:0.4rem 0.5rem; background:var(--bg-subtle, rgba(0,0,0,0.03)); border:1px solid var(--border); border-radius:4px; margin-bottom:0.35rem; font-size:0.75rem;">
+                  <div style="font-weight:600; color:var(--text);">${escapeHtml(m.name)} ${m.id ? `<span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-faint); margin-left:0.25rem;">#${escapeHtml(m.id)}</span>` : ""}</div>
+                  ${m.formula ? `<div style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem; word-break:break-all;"><strong>Formula:</strong> ${escapeHtml(m.formula)}</div>` : ""}
+                  ${m.units ? `<div style="font-size:0.7rem; color:var(--text-faint); margin-top:0.15rem;"><strong>Units:</strong> ${escapeHtml(m.units)}</div>` : ""}
+                </div>
+              `).join("")}
+            </div>
+          `;
+        });
+
+        metricsHtml = `
+          <details class="ref-section" open>
+            <summary>
+              <span>Benchmarking metrics (${Number(elem.metrics.length)})</span>
+              <svg class="icon" style="width:11px; height:11px;"><use href="#icon-chevron-down"/></svg>
+            </summary>
+            <div class="ref-section-body">
+              ${catBlocks}
+            </div>
+          </details>
+        `;
+      }
 
       // Children
       const children = state.data.elements.filter(e => e.parent_hierarchy_id === elem.hierarchy_id);
@@ -4033,6 +4541,7 @@
         <div class="ref-subline">PCF ${escapeHtml(elem.pcf_id)} · ${escapeHtml(elem.level_name)} · ${statusText}</div>
         ${defHtml}
         ${termsHtml}
+        ${metricsHtml}
         ${childrenHtml}
         ${relatedHtml}
         ${siblingsHtml}
@@ -4091,11 +4600,46 @@
       }, 120);
     };
 
+    function updateLevelFilterOptions() {
+      const select = document.getElementById("level-filter");
+      if (!select || !state.data || !state.data.elements) return;
+      const currentVal = select.value || "all";
+      const maxLevel = Math.max(5, ...state.data.elements.map(e => e.level || 1));
+
+      const levelNames = {
+        1: "Category",
+        2: "Process group",
+        3: "Process",
+        4: "Activity",
+        5: "Task"
+      };
+
+      let html = `<option value="all">All levels (1–${maxLevel})</option>`;
+      for (let l = 1; l <= maxLevel; l++) {
+        const label = l <= 5 ? `Level ${l}: ${levelNames[l]}` : `Level ${l}`;
+        html += `<option value="${l}">${escapeHtml(label)}</option>`;
+      }
+      select.innerHTML = html;
+      if (currentVal !== "all" && parseInt(currentVal, 10) <= maxLevel) {
+        select.value = currentVal;
+      } else {
+        select.value = "all";
+        state.levelFilter = "all";
+      }
+    }
+
     function populateCategoryFilters() {
+      updateLevelFilterOptions();
       const matrixSelect = document.getElementById("matrix-cat-filter");
       const explorerSelect = document.getElementById("explorer-cat-filter");
       const donutSelect = document.getElementById("donut-cat-filter");
 
+      if (matrixSelect) {
+        matrixSelect.innerHTML = '<option value="all">All categories</option>';
+      }
+      if (explorerSelect) {
+        explorerSelect.innerHTML = '<option value="all">All categories</option>';
+      }
       if (donutSelect) {
         donutSelect.innerHTML = '<option value="all">All categories (overall)</option>';
       }
@@ -4403,7 +4947,7 @@
 
     /* URL Hash Routing */
     function updateHash() {
-      if (state._isHandlingHash) return;
+      if (state._isHandlingHash || state.appState !== "Loaded") return;
       let newHash = `#${state.activeView}`;
       if (state.activeView === "explorer") {
         const catId = (state.selectedElement && state.selectedElement.category_id) ? state.selectedElement.category_id : state.selectedCategoryId;
@@ -4421,7 +4965,7 @@
     }
 
     function applyHash() {
-      if (state._isHandlingHash || !state.data) return;
+      if (state._isHandlingHash || state.appState !== "Loaded" || !state.data) return;
       state._isHandlingHash = true;
       try {
         const rawHash = window.location.hash.replace(/^#\/?/, "");
@@ -4430,12 +4974,16 @@
           return;
         }
         const parts = rawHash.split("/");
-        const view = parts[0] || "explorer";
-        if (["explorer", "matrix", "analytics", "glossary"].includes(view)) {
-          switchView(view, false);
+        const requestedView = parts[0] || "explorer";
+        const available = getAvailableViews();
+        const matched = available.find(v => v.id === requestedView);
+        if (matched) {
+          switchView(matched.id, false);
+        } else {
+          switchView("explorer", false);
         }
 
-        if (view === "explorer") {
+        if (state.activeView === "explorer") {
           let targetCat = null;
           let targetPcf = null;
           for (let i = 1; i < parts.length; i++) {
@@ -4444,7 +4992,7 @@
             else if (seg.startsWith("pcf-")) targetPcf = seg.replace("pcf-", "");
           }
 
-          if (targetCat && targetCat !== state.selectedCategoryId) {
+          if (targetCat && targetCat !== state.selectedCategoryId && state.data.categories.some(c => c.category_id === targetCat)) {
             selectCategory(targetCat, false);
           }
 
@@ -4582,24 +5130,32 @@
 
     function handleFileSelection(file) {
       if (!file) return;
+      if (state.appState === "Loading") {
+        showToast("A workbook is currently loading...", true);
+        return;
+      }
       if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-        showToast("Please choose an Excel workbook (.xlsx)", true);
+        showUploadModalError("Please choose an Excel workbook (.xlsx)", file.name);
         return;
       }
 
       pendingFileName = file.name;
+      setAppState("Loading");
+
       const reader = new FileReader();
       reader.onload = function(e) {
-        try {
-          pendingWorkbookBuffer = new Uint8Array(e.target.result);
-          openUploadModal(pendingWorkbookBuffer, pendingFileName);
-        } catch (err) {
-          console.warn("File read error:", err.message);
-          showToast(`Cannot read file: ${err.message}`, true);
-        }
+        setTimeout(() => {
+          try {
+            pendingWorkbookBuffer = new Uint8Array(e.target.result);
+            openUploadModal(pendingWorkbookBuffer, pendingFileName);
+          } catch (err) {
+            console.warn("File read error:", err.message);
+            handleLoadFailure(err.message, pendingFileName);
+          }
+        }, 20);
       };
       reader.onerror = function() {
-        showToast("Failed to read file from disk", true);
+        handleLoadFailure("Failed to read file from disk", pendingFileName);
       };
       reader.readAsArrayBuffer(file);
     }
@@ -4611,7 +5167,7 @@
         if (typeof XLSX === "undefined") {
           throw new Error("SheetJS library (vendor/xlsx.full.min.js) is not loaded.");
         }
-        const previewData = parsePCFWorkbook(buf, { fileName });
+        const previewData = parsePCFWorkbook(buf, fileName);
         const modal = document.getElementById("upload-modal-container");
         const nameInput = document.getElementById("modal-framework-name");
         const verInput = document.getElementById("modal-framework-version");
@@ -4625,16 +5181,20 @@
         if (confirmBtn) confirmBtn.disabled = false;
         if (formFields) formFields.style.display = "block";
 
-        let guessedTitle = "APQC Process Classification Framework";
-        if (/retail/i.test(fileName)) guessedTitle = "APQC Retail PCF";
-        else if (/health/i.test(fileName)) guessedTitle = "APQC Healthcare Provider PCF";
-        else if (previewData.categories.length > 0) guessedTitle = `APQC ${previewData.categories[0].name.split(" ")[0]} PCF`;
+        let guessedTitle = previewData.metadata.framework;
+        if (!guessedTitle || guessedTitle === "Process Classification Framework (PCF)") {
+          if (/retail/i.test(fileName)) guessedTitle = "APQC Retail PCF";
+          else if (/health/i.test(fileName)) guessedTitle = "APQC Healthcare Provider PCF";
+          else if (previewData.categories.length > 0) guessedTitle = `APQC ${previewData.categories[0].name.split(" ")[0]} PCF`;
+          else guessedTitle = "APQC Process Classification Framework";
+        }
 
         nameInput.value = guessedTitle;
-        verInput.value = "v7.2.1";
+        verInput.value = previewData.metadata.version_label || previewData.metadata.version || "v7.2.1";
 
+        const profile = LAYOUT_PROFILES.find(p => p.id === previewData.metadata.source_layout) || LAYOUT_PROFILES[0];
         const isRetail = /retail/i.test(fileName) || /retail/i.test(guessedTitle);
-        const defaultOp = isRetail ? new Set(["1", "2", "3", "4", "5", "6"]) : new Set(["1", "2", "3", "4", "5"]);
+        const defaultOp = isRetail ? new Set(["1", "2", "3", "4", "5", "6"]) : new Set(profile.defaultOperating);
 
         catsGrid.innerHTML = "";
         previewData.categories.forEach(c => {
@@ -4649,12 +5209,16 @@
           catsGrid.appendChild(label);
         });
 
-        summaryEl.textContent = `Detected: ${previewData.elements.length.toLocaleString()} elements across ${previewData.categories.length} categories (${previewData.metadata.total_new.toLocaleString()} new, ${previewData.metadata.total_renamed.toLocaleString()} renamed, ${previewData.metadata.definitions_count.toLocaleString()} definitions).`;
+        const layoutLabel = profile.label;
+        const metricRecs = previewData.metadata.total_metric_records;
+        summaryEl.textContent = `Detected layout: ${layoutLabel}. ${previewData.elements.length.toLocaleString()} elements across ${previewData.categories.length} categories (${previewData.metadata.total_new.toLocaleString()} new, ${previewData.metadata.total_renamed.toLocaleString()} renamed, ${previewData.metadata.definitions_count.toLocaleString()} definitions${metricRecs ? `, ${metricRecs.toLocaleString()} metric records` : ""}).`;
 
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "none";
         modal.style.display = "flex";
       } catch (err) {
         console.warn("Initial parse error:", err.message);
-        showUploadModalError(err.message, fileName);
+        handleLoadFailure(err.message, fileName);
       }
     }
 
@@ -4665,9 +5229,12 @@
       const formFields = document.getElementById("upload-modal-fields");
 
       let cleanMsg = message;
+      const lower = cleanMsg.toLowerCase();
       if (cleanMsg.includes("SheetJS library")) {
         cleanMsg = "SheetJS library (vendor/xlsx.full.min.js) wasn't loaded. Ensure the file is present in vendor/.";
-      } else if (!cleanMsg.includes("Use a 'vX vs vY' workbook") && (cleanMsg.includes("corrupt") || cleanMsg.includes("Unsupported") || cleanMsg.includes("read") || cleanMsg.includes("header") || cleanMsg.includes("ZIP") || cleanMsg.includes("Cannot"))) {
+      } else if (cleanMsg.includes("Unknown workbook layout") || cleanMsg.includes("Missing required worksheet") || cleanMsg.includes("Invalid Hierarchy ID")) {
+        // Preserve actionable layout & validation error messages
+      } else if (!cleanMsg.includes("Use a 'vX vs vY' workbook") && (lower.includes("corrupt") || lower.includes("unsupported") || lower.includes("read") || lower.includes("header") || lower.includes("zip") || lower.includes("cannot") || lower.includes("empty"))) {
         cleanMsg = "Cannot read workbook structure. Use an APQC Excel workbook (.xlsx) from apqc.org/pcf.";
       }
       if (errBox) {
@@ -4676,16 +5243,53 @@
       }
       if (formFields) formFields.style.display = "none";
       if (confirmBtn) confirmBtn.disabled = true;
+      const loadingOverlay = document.getElementById("loading-overlay");
+      if (loadingOverlay) loadingOverlay.style.display = "none";
       if (modal) modal.style.display = "flex";
     }
 
     window.showUploadModalError = showUploadModalError;
+    window.openUploadModal = openUploadModal;
 
     function closeUploadModal() {
       const modal = document.getElementById("upload-modal-container");
       if (modal) modal.style.display = "none";
+      const errBox = document.getElementById("upload-dialog-error");
+      if (errBox) errBox.style.display = "none";
       pendingWorkbookBuffer = null;
       pendingFileName = "";
+      if (state.data) {
+        setAppState("Loaded", { isRestoring: true });
+      } else {
+        setAppState("Empty");
+      }
+    }
+    window.closeUploadModal = closeUploadModal;
+
+    window.loadWorkbookDirect = function(buf, fileName, options = {}) {
+      try {
+        setAppState("Loading");
+        const parsed = parsePCFWorkbook(buf, Object.assign({ fileName }, options));
+        state.previousData = state.data;
+        state.data = parsed;
+        setAppState("Loaded");
+        return true;
+      } catch (err) {
+        console.warn("Direct load error:", err.message);
+        handleLoadFailure(err.message, fileName);
+        return false;
+      }
+    };
+
+    function normalizeHeader(h) {
+      if (h === null || h === undefined) return "";
+      return String(h)
+        .trim()
+        .toLowerCase()
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/\?+$/, "")
+        .trim();
     }
 
     function decodeChanges(changeStr) {
@@ -4714,7 +5318,6 @@
         prefix_part = parts[0];
         let was_content = parts.slice(1).join("WAS:").trim();
 
-        // Robust trailing NEW detection: case-insensitive, any whitespace around comma, optional trailing period
         const mNew = /,\s*new\s*\.?\s*$/i.exec(was_content);
         if (mNew) {
           was_content = was_content.slice(0, mNew.index).trim();
@@ -4730,8 +5333,6 @@
         is_new = /\bNEW\b/i.test(raw);
       }
 
-      // Parse child tokens (+, -, c) as whole tokens only from prefix_part.
-      // Split the prefix on commas and match each token with ^[+\-c]\d+$
       const added = [];
       const removed = [];
       const changed = [];
@@ -4760,48 +5361,310 @@
       };
     }
 
-    function parsePCFWorkbook(workbookData, options = {}) {
+    // ======================================================================
+    // STRATEGY IMPLEMENTATIONS: DEFINITIONS
+    // ======================================================================
+
+    const GlossarySheetDefinitions = {
+      load(wb) {
+        const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes("glossary"));
+        if (!sheetName || !wb.Sheets[sheetName]) return () => "";
+        const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: "" });
+        if (!rawRows || rawRows.length === 0) return () => "";
+        const headers = rawRows[0].map(normalizeHeader);
+        const pidIdx = headers.indexOf("process element id") !== -1 ? headers.indexOf("process element id") : (headers.indexOf("pcf id") !== -1 ? headers.indexOf("pcf id") : 0);
+        const hidIdx = headers.indexOf("hierarchy id") !== -1 ? headers.indexOf("hierarchy id") : 1;
+        const defIdx = headers.indexOf("definition") !== -1 ? headers.indexOf("definition") : 3;
+
+        const defsByPid = new Map();
+        const defsByHid = new Map();
+        for (let i = 1; i < rawRows.length; i++) {
+          const r = rawRows[i];
+          const pid = String(r[pidIdx] || "").trim();
+          const hid = String(r[hidIdx] || "").trim();
+          const d = String(r[defIdx] || "").trim();
+          if (pid === "10001" && !hid) continue; // Ignore Root row
+          if (pid) defsByPid.set(pid, d);
+          if (hid) defsByHid.set(hid, d);
+        }
+        return (pcfId, hierarchyId) => defsByPid.get(pcfId) || defsByHid.get(hierarchyId) || "";
+      }
+    };
+
+    const InlineColumnDefinitions = {
+      load(wb) {
+        return (pcfId, hierarchyId, row) => {
+          if (!row) return "";
+          return String(row["element description"] || row["definition"] || "").trim();
+        };
+      }
+    };
+
+    // ======================================================================
+    // STRATEGY IMPLEMENTATIONS: METRICS
+    // ======================================================================
+
+    const FlagOnlyMetrics = {
+      load(wb) {
+        return {
+          resolver: () => [],
+          totalRecords: 0
+        };
+      }
+    };
+
+    const MetricsSheetMetrics = {
+      load(wb) {
+        const sheetName = wb.SheetNames.find(s => s.trim().toLowerCase() === "metrics");
+        if (!sheetName || !wb.Sheets[sheetName]) {
+          return { resolver: () => [], totalRecords: 0 };
+        }
+        const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: "" });
+        if (!rawRows || rawRows.length === 0) return { resolver: () => [], totalRecords: 0 };
+
+        const headers = rawRows[0].map(normalizeHeader);
+        const pidIdx = headers.indexOf("process element id") !== -1 ? headers.indexOf("process element id") : 0;
+        const hidIdx = headers.indexOf("hierarchy id") !== -1 ? headers.indexOf("hierarchy id") : 1;
+        const catIdx = headers.indexOf("metric category") !== -1 ? headers.indexOf("metric category") : 3;
+        const idIdx = headers.indexOf("metric id") !== -1 ? headers.indexOf("metric id") : 4;
+        const nameIdx = headers.indexOf("metric name") !== -1 ? headers.indexOf("metric name") : 5;
+        const formIdx = headers.indexOf("formula") !== -1 ? headers.indexOf("formula") : 6;
+        const unitIdx = headers.indexOf("units") !== -1 ? headers.indexOf("units") : 7;
+
+        const byHid = new Map();
+        const byPid = new Map();
+        let totalRecords = 0;
+
+        for (let i = 1; i < rawRows.length; i++) {
+          const r = rawRows[i];
+          const name = String(r[nameIdx] || "").trim();
+          if (!name) continue;
+          const hid = String(r[hidIdx] || "").trim();
+          const pid = String(r[pidIdx] || "").trim();
+          const mCat = String(r[catIdx] || "").trim() || "General";
+          const mId = String(r[idIdx] || "").trim();
+          const formula = String(r[formIdx] || "").trim();
+          const units = String(r[unitIdx] || "").trim();
+
+          const metric = { category: mCat, id: mId, name, formula, units };
+          if (hid) {
+            if (!byHid.has(hid)) byHid.set(hid, []);
+            byHid.get(hid).push(metric);
+          }
+          if (pid) {
+            if (!byPid.has(pid)) byPid.set(pid, []);
+            byPid.get(pid).push(metric);
+          }
+          totalRecords++;
+        }
+
+        return {
+          resolver: (hierarchyId, pcfId) => byHid.get(hierarchyId) || (pcfId ? byPid.get(pcfId) : null) || [],
+          totalRecords
+        };
+      }
+    };
+
+    // ======================================================================
+    // STRATEGY IMPLEMENTATIONS: VERSION INFO & ATTRIBUTION
+    // ======================================================================
+
+    const VersionInfoStrategy = {
+      read(wb, filename = "") {
+        let title = null;
+        let version = null;
+        let compared_to = null;
+        let generated_on = null;
+
+        const introName = wb.SheetNames.find(s => s.trim().toLowerCase() === "introduction");
+        if (introName && wb.Sheets[introName]) {
+          const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[introName], { header: 1, defval: "" });
+          for (const row of rawRows) {
+            for (const cell of row) {
+              if (!cell) continue;
+              const text = String(cell).trim();
+              const u = text.toUpperCase();
+              if (u.includes("PROCESS CLASSIFICATION FRAMEWORK") && !title) {
+                if (!u.startsWith("COMPARED TO")) {
+                  title = "APQC " + text.split(/\s+/).map(w => ["PCF", "APQC"].includes(w.toUpperCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+                }
+              }
+              const mVer = text.match(/VERSION\s+(?:NUMBER\s+)?([0-9]+(?:\.[0-9]+)*)/i);
+              if (mVer && !version) {
+                const val = mVer[1];
+                version = val.startsWith("v") ? val : "v" + val;
+              }
+              const mComp = text.match(/COMPARED\s+TO.*?(?:VERSION\s+)?([0-9]+(?:\.[0-9]+)*)$/i);
+              if (mComp && !compared_to) {
+                const val = mComp[1];
+                compared_to = val.startsWith("v") ? val : "v" + val;
+              }
+              const mGen = text.match(/GENERATED\s+ON\s+([0-9]+\/[0-9]+\/[0-9]+|[A-Za-z]+\s+[0-9]+,\s+[0-9]+|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+              if (mGen && !generated_on) {
+                generated_on = mGen[1];
+              }
+            }
+          }
+        }
+
+        const copyName = wb.SheetNames.find(s => s.toLowerCase().includes("copyright"));
+        let copyYear = 2022;
+        let attribution = '©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.';
+        if (copyName && wb.Sheets[copyName]) {
+          const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[copyName], { header: 1, defval: "" });
+          for (const row of rawRows) {
+            for (const cell of row) {
+              if (!cell) continue;
+              const text = String(cell).trim();
+              const m = text.match(/©\s*([0-9]{4})/);
+              if (m) copyYear = parseInt(m[1], 10);
+              if (text.length > 50 && (text.includes("APQC") || text.includes("Process Classification Framework"))) {
+                attribution = text;
+              }
+            }
+            if (copyYear !== 2022) break;
+          }
+        }
+
+        return { title, version_label: version, compared_to, generated_on, copyright_year: copyYear, attribution };
+      }
+    };
+
+    // ======================================================================
+    // LAYOUT PROFILES REGISTRY
+    // ======================================================================
+
+    const LAYOUT_PROFILES = [
+      {
+        id: "family-b-2026",
+        label: "2026 v8.0 (Inline Definitions & Metrics Sheet)",
+        detect: (sNames, headers) => sNames.includes("combined") && sNames.includes("metrics") && headers.includes("element description"),
+        definitionSource: InlineColumnDefinitions,
+        metricsSource: MetricsSheetMetrics,
+        defaultOperating: ["1", "2", "3", "4", "5", "6"]
+      },
+      {
+        id: "family-a-2023",
+        label: "2023 Comparison (Glossary Sheet & Flag-Only Metrics)",
+        detect: (sNames, headers) => sNames.includes("combined") && sNames.some(s => s.includes("glossary")),
+        definitionSource: GlossarySheetDefinitions,
+        metricsSource: FlagOnlyMetrics,
+        defaultOperating: ["1", "2", "3", "4", "5"]
+      }
+    ];
+
+    function detectLayout(sheetNames, headers) {
+      const sLower = sheetNames.map(s => s.trim().toLowerCase());
+      if (!sLower.some(s => s.includes("combined"))) {
+        throw new Error("Missing required worksheet: 'Combined'");
+      }
+      const hLower = headers.map(normalizeHeader);
+      for (const p of LAYOUT_PROFILES) {
+        if (p.detect(sLower, hLower)) return p;
+      }
+      throw new Error(
+        "Unknown workbook layout.\n" +
+        "Sheets found: " + JSON.stringify(sheetNames) + "\n" +
+        "Combined headers found: " + JSON.stringify(headers) + "\n" +
+        "Expected either:\n" +
+        "  - Family A (2023 comparison): Sheets 'Combined' and 'Glossary terms'\n" +
+        "  - Family B (2026 v8.0): Sheets 'Combined' and 'Metrics' with 'Element Description' in Combined"
+      );
+    }
+
+    // ======================================================================
+    // SHARED CANONICAL PIPELINE
+    // ======================================================================
+
+    function parsePCFWorkbook(workbookData, fileName = "", options = {}) {
+      if (typeof fileName === "object" && fileName !== null && !options.operatingCategories && !options.frameworkName) {
+        options = fileName;
+        fileName = options.fileName || "";
+      }
+
       if (typeof XLSX === "undefined") {
         throw new Error("SheetJS library (vendor/xlsx.full.min.js) is required to parse Excel files.");
       }
 
-      const wb = (typeof workbookData === "object" && workbookData.Sheets) ? 
-        workbookData : 
-        XLSX.read(workbookData, { type: "array" });
+      let wb;
+      if (!workbookData || (workbookData.length !== undefined && workbookData.length === 0)) {
+        throw new Error("Cannot read workbook structure. File is empty.");
+      }
+      if (typeof workbookData === "object" && workbookData.SheetNames) {
+        wb = workbookData;
+      } else {
+        wb = XLSX.read(workbookData, { type: (typeof Buffer !== "undefined" && Buffer.isBuffer(workbookData)) ? "buffer" : "array" });
+      }
 
-      const findSheet = (pattern) => {
-        if (wb.Sheets[pattern]) return wb.Sheets[pattern];
-        const key = Object.keys(wb.Sheets).find(k => k.toLowerCase().includes(pattern.toLowerCase()));
-        return key ? wb.Sheets[key] : null;
+      const combName = wb.SheetNames.find(s => s.toLowerCase().includes("combined"));
+      if (!combName || !wb.Sheets[combName]) {
+        throw new Error("Missing required worksheet: 'Combined'");
+      }
+
+      const combWs = wb.Sheets[combName];
+      const rawRows = XLSX.utils.sheet_to_json(combWs, { header: 1, defval: "" });
+      if (!rawRows || rawRows.length === 0) {
+        throw new Error("Worksheet 'Combined' has no rows");
+      }
+
+      const rawHeaders = rawRows[0];
+      const normalizedHeaders = rawHeaders.map(normalizeHeader);
+
+      const profile = detectLayout(wb.SheetNames, rawHeaders);
+
+      const findIdx = (aliases) => {
+        for (const a of aliases) {
+          const idx = normalizedHeaders.indexOf(a);
+          if (idx !== -1) return idx;
+        }
+        return -1;
       };
 
-      const combSheet = findSheet("Combined");
-      if (!combSheet) throw new Error("Sheet 'Combined' wasn't found. Use a 'vX vs vY' workbook from apqc.org/pcf.");
+      const pcfIdx = findIdx(["pcf id", "process element id", "element id"]);
+      const hidIdx = findIdx(["hierarchy id", "hierarchy"]);
+      const nameIdx = findIdx(["name", "process element", "process name", "element name"]);
+      const diffIdx = findIdx(["difference index", "diff index"]);
+      const chIdx = findIdx(["change details", "change detail"]);
+      const mFlagIdx = findIdx(["metrics available", "metrics available?"]);
+      const descIdx = findIdx(["element description", "definition", "description"]);
 
-      const glossSheet = findSheet("Glossary");
-      if (!glossSheet) throw new Error("Sheet 'Glossary terms' wasn't found. Use a 'vX vs vY' workbook from apqc.org/pcf.");
+      if (hidIdx === -1) throw new Error("Worksheet 'Combined' is missing required 'Hierarchy ID' column");
 
-      const combinedRows = XLSX.utils.sheet_to_json(combSheet, { defval: "" });
-      const glossaryRows = XLSX.utils.sheet_to_json(glossSheet, { defval: "" });
+      const combinedRecords = [];
+      for (let i = 1; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        const hid = String(hidIdx !== -1 && r[hidIdx] !== undefined ? r[hidIdx] : "").trim();
+        if (!hid) continue;
+        combinedRecords.push({
+          pcf_id: String(pcfIdx !== -1 && r[pcfIdx] !== undefined ? r[pcfIdx] : "").trim(),
+          hierarchy_id: hid,
+          name: String(nameIdx !== -1 && r[nameIdx] !== undefined ? r[nameIdx] : "").trim(),
+          diff_index: parseInt(diffIdx !== -1 && r[diffIdx] !== undefined ? r[diffIdx] : 0, 10) || 0,
+          metrics_available: ["Y", "YES"].includes(String(mFlagIdx !== -1 && r[mFlagIdx] !== undefined ? r[mFlagIdx] : "").trim().toUpperCase()),
+          change_details: String(chIdx !== -1 && r[chIdx] !== undefined ? r[chIdx] : "").trim(),
+          "element description": String(descIdx !== -1 && r[descIdx] !== undefined ? r[descIdx] : "").trim()
+        });
+      }
 
-      if (combinedRows.length === 0) throw new Error("Worksheet 'Combined' has no rows");
+      const defResolver = profile.definitionSource.load(wb, combinedRecords);
+      const { resolver: metricResolver, totalRecords: totalMetricRecords } = profile.metricsSource.load(wb);
+      const vInfo = VersionInfoStrategy.read(wb, fileName);
 
-      const glossByPid = new Map();
-      const glossByHid = new Map();
+      let opCats;
+      if (options.operatingCategories) {
+        opCats = new Set(Array.from(options.operatingCategories).map(String));
+      } else {
+        const isRetail = fileName.toLowerCase().includes("retail") || (vInfo.title && vInfo.title.toLowerCase().includes("retail"));
+        if (isRetail) {
+          opCats = new Set(["1", "2", "3", "4", "5", "6"]);
+        } else {
+          opCats = new Set(profile.defaultOperating);
+        }
+      }
 
-      glossaryRows.forEach(row => {
-        const pid = String(row["Process Element ID"] || row["PCF ID"] || "").trim();
-        const hid = String(row["Hierarchy ID"] || "").trim();
-        const defn = String(row["Definition"] || "").trim();
-        if (pid) glossByPid.set(pid, defn);
-        if (hid) glossByHid.set(hid, defn);
-      });
-
-      const operatingCats = options.operatingCategories || new Set(["1", "2", "3", "4", "5"]);
       const elements = [];
       const categoryMap = new Map();
-
-      const level_names = {
+      const levelNames = {
         1: "Category",
         2: "Process group",
         3: "Process",
@@ -4809,16 +5672,8 @@
         5: "Task"
       };
 
-      combinedRows.forEach(row => {
-        const pcf_id = String(row["PCF ID"] || row["Process Element ID"] || "").trim();
-        const hierarchy_id = String(row["Hierarchy ID"] || "").trim();
-        const name = String(row["Name"] || "").trim();
-        const diff_index = parseInt(row["Difference Index"] || 0, 10) || 0;
-        const metrics_available = String(row["Metrics available?"] || "").trim().toUpperCase() === "Y";
-        const change_details = String(row["Change details"] || "");
-
-        if (!hierarchy_id) return;
-
+      combinedRecords.forEach(row => {
+        const hierarchy_id = row.hierarchy_id;
         const parts = hierarchy_id.split(".");
         let level = parts.length;
         const category_num = parts[0];
@@ -4836,16 +5691,22 @@
           level_name = "Category";
           parent_hid = "";
         } else {
-          level_name = level_names[level] || `Level ${level}`;
+          level_name = levelNames[level] || `Level ${level}`;
           parent_hid = parts.length > 1 ? parts.slice(0, -1).join(".") : "";
           if (parts.length === 2 && parts[1] !== "0") {
             parent_hid = `${parts[0]}.0`;
           }
         }
 
-        const defn = glossByPid.get(pcf_id) || glossByHid.get(hierarchy_id) || "";
-        const changeInfo = decodeChanges(change_details);
-        const process_type = operatingCats.has(category_num) ? "Operating Processes" : "Management & Support Services";
+        const pcf_id = row.pcf_id;
+        const name = row.name;
+        const diff_index = row.diff_index;
+        const metrics_available = row.metrics_available;
+        const changeInfo = decodeChanges(row.change_details);
+        const process_type = opCats.has(category_num) ? "Operating Processes" : "Management & Support Services";
+
+        const definition = defResolver(pcf_id, hierarchy_id, row);
+        const metricsList = metricResolver(hierarchy_id, pcf_id);
 
         const elem = {
           id: pcf_id || hierarchy_id,
@@ -4859,7 +5720,7 @@
           diff_index,
           metrics_available,
           process_type,
-          definition: defn,
+          definition,
           change_details: changeInfo.raw_changes,
           has_changes: changeInfo.has_changes,
           is_new: changeInfo.is_new,
@@ -4867,7 +5728,8 @@
           renamed_was: changeInfo.renamed_was,
           added_children: changeInfo.added_children,
           removed_children: changeInfo.removed_children,
-          changed_children: changeInfo.changed_children
+          changed_children: changeInfo.changed_children,
+          metrics: metricsList
         };
 
         elements.push(elem);
@@ -4898,48 +5760,64 @@
         const elements_with_changes = catElements.filter(e => e.has_changes).length;
         const metrics_count = catElements.filter(e => e.metrics_available).length;
         const max_diff_index = catElements.reduce((max, e) => Math.max(max, e.diff_index), 0);
-        const sum_diff_index = catElements.reduce((sum, e) => sum + e.diff_index, 0);
+        const sumDiff = catElements.reduce((sum, e) => sum + e.diff_index, 0);
 
         categories.push({
           category_id: catNum,
-          hierarchy_id: catInfo.hierarchy_id,
-          pcf_id: catInfo.pcf_id,
-          name: catInfo.name,
-          process_type: catInfo.process_type,
+          hierarchy_id: catInfo ? catInfo.hierarchy_id : `${catNum}.0`,
+          pcf_id: catInfo ? catInfo.pcf_id : "",
+          name: catInfo ? catInfo.name : `Category ${catNum}`,
+          process_type: catInfo ? catInfo.process_type : (opCats.has(catNum) ? "Operating Processes" : "Management & Support Services"),
           total_elements,
           elements_with_changes,
           new_elements,
           renamed_elements,
           metrics_available: metrics_count,
           max_diff_index,
-          sum_diff_index
+          sum_diff_index: sumDiff
         });
       });
 
-      const newCount = elements.filter(e => e.is_new).length;
-      const renamedCount = elements.filter(e => e.is_renamed).length;
-      const metricsCount = elements.filter(e => e.metrics_available).length;
-      const changesCount = elements.filter(e => e.has_changes).length;
-      const defCount = elements.filter(e => e.definition && e.definition.trim().length > 0).length;
+      const frameworkTitle = options.frameworkName || vInfo.title || (
+        fileName.toLowerCase().includes("healthcare") ? "APQC Healthcare Provider PCF" :
+        (fileName.toLowerCase().includes("retail") ? "APQC Retail PCF" :
+        (fileName.toLowerCase().includes("city") ? "APQC City Government PCF" :
+        (fileName.toLowerCase().includes("payor") || fileName.toLowerCase().includes("insurance") ? "APQC Health Insurance Payor PCF" :
+        "APQC Process Classification Framework")))
+      );
 
-      return {
-        metadata: {
-          source_document: options.fileName || "Uploaded PCF Workbook",
-          framework: options.frameworkName || "Process Classification Framework (PCF)",
-          version: options.version || "v7.2.1",
-          attribution: options.attribution || "©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® (\"PCF\") is the copyrighted intellectual property of APQC.",
-          total_elements: elements.length,
-          total_with_changes: changesCount,
-          total_new: newCount,
-          total_renamed: renamedCount,
-          total_with_metrics: metricsCount,
-          categories_count: categories.length,
-          definitions_count: defCount
-        },
-        categories,
-        elements
+      const versionText = options.version || vInfo.version_label || (
+        fileName.toLowerCase().includes("healthcare") ? "7.2.1 vs 6.1.1 (April 2023)" :
+        (fileName.includes("721") ? "v7.2.1" : "v8.0")
+      );
+
+      const metadata = {
+        source_document: fileName,
+        source_layout: profile.id,
+        layout_label: profile.label,
+        framework: frameworkTitle,
+        version: versionText,
+        version_label: vInfo.version_label || "v7.2.1",
+        compared_to: vInfo.compared_to,
+        generated_on: vInfo.generated_on,
+        copyright_year: vInfo.copyright_year,
+        attribution: vInfo.attribution,
+        total_elements: elements.length,
+        total_with_changes: elements.filter(e => e.has_changes).length,
+        total_new: elements.filter(e => e.is_new).length,
+        total_renamed: elements.filter(e => e.is_renamed).length,
+        total_with_metrics: elements.filter(e => e.metrics_available).length,
+        total_metric_records: totalMetricRecords,
+        definitions_count: elements.filter(e => e.definition && e.definition.trim().length > 0).length,
+        categories_count: categories.length
       };
+
+      return { metadata, categories, elements };
     }
+
+    window.parsePCFWorkbook = parsePCFWorkbook;
+    window.LAYOUT_PROFILES = LAYOUT_PROFILES;
+    window.detectLayout = detectLayout;
 
     function exportCurrentViewToCSV() {
       let elements = state.data.elements.filter(e => e.category_id === state.selectedCategoryId);

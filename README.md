@@ -2,9 +2,86 @@
 
 Interactive, zero-dependency offline Single Page Application (SPA) for exploring, searching, and analyzing any APQC Process Classification Framework® (PCF) workbook, whether cross-industry or industry-specific.
 
-## Sample Data
+## Empty Startup & Multi-Workbook Support
 
-The application bundles the APQC Healthcare Provider PCF (v7.2.1 vs v6.1.1) as an out-of-the-box demonstration dataset. Users can upload any standard APQC PCF Excel workbook (`.xlsx`) via the upload dialog or drag-and-drop. Clicking **Back to sample data** restores the bundled Healthcare Provider reference dataset.
+YabadabaAPQC starts completely empty with zero bundled data and zero network requests. The user loads any standard APQC Process Classification Framework® (PCF) Excel workbook (`.xlsx`) directly from their local machine via the primary **Load workbook** button or drag-and-drop. To close the currently loaded workbook and return to the clean empty state, click **Close workbook**.
+
+## Supported APQC PCF Workbook Layouts
+
+YabadabaAPQC uses a composed Strategy architecture to parse and analyze any standard APQC PCF workbook across both historical and modern workbook layout families:
+
+| Feature / Aspect | Family A: "2023 Comparison" | Family B: "2026 v8.0" |
+| :--- | :--- | :--- |
+| **Reference Workbooks** | Healthcare Provider, Retail, City Government, Health Insurance Payor | Cross-Industry v8.0, Consumer Products v8.0 |
+| **Worksheet Structure** | `Introduction`, `About`, `Categories`, `1.0`..`13.0`, `Combined`, `Glossary terms`, `Copyright and attribution` | `Introduction`, `About`, `Categories`, `1.0`..`13.0`, `Combined`, `Metrics`, `Copyright and Attribution` |
+| **Combined Headers** | `PCF ID`, `Hierarchy ID`, `Name`, `Difference Index`, `Change details`, `Metrics available?` | Same plus `Element Description` |
+| **Definition Source** | `GlossarySheetDefinitions` (joins `Glossary terms` sheet by PID/HID, ignores Root row 10001) | `InlineColumnDefinitions` (reads `Element Description` column in `Combined`) |
+| **Metrics Source** | `FlagOnlyMetrics` (Y/N flag in Combined) | `MetricsSheetMetrics` (reads `Metrics` sheet with Name, Category, Formula, Units) |
+| **Hierarchy Depth** | Fully dynamic, supports Level 6 (e.g. 13 Level-6 elements in Health Insurance Payor) | Levels 1–5 |
+| **Default Operating Categories** | 1–5 (Healthcare) or 1–6 (Retail, City Gov, Payor); configurable in upload dialog | 1–6; configurable in upload dialog |
+
+### Adding a New Layout Profile (<10 Lines of Code)
+
+The pipeline is decoupled from workbook structures via pluggable layout profiles in both Python (`scripts/build_pcf_json.py`) and JavaScript (`index.html` & `scripts/test_shared_cases.js`). Adding a new profile requires no modifications to the core parsing pipeline:
+
+```javascript
+LAYOUT_PROFILES.push({
+  id: "custom-layout-2027",
+  label: "2027 Custom Framework",
+  detect: (sheets, headers) => sheets.includes("combined") && sheets.includes("dictionary"),
+  definitionSource: DictionarySheetDefinitions,
+  metricsSource: MetricsSheetMetrics,
+  defaultOperating: ["1", "2", "3", "4", "5", "6"]
+});
+```
+
+## Dynamic Capabilities & Pluggable View Registry
+
+After parsing a workbook, the application computes a dynamic capabilities object from the data actually loaded:
+
+```javascript
+capabilities = {
+  definitions:  count of elements with a non-empty definition > 0,
+  metrics:      count of metric records > 0 (Metrics sheet),
+  metricsFlag:  any element with Metrics = Y,
+  changes:      any element with change details,
+  levels:       highest hierarchy level present (5 or 6),
+  version:      { label, comparedTo, generatedOn }
+}
+```
+
+Screens register with the View Registry declaring their own capability requirements:
+
+```javascript
+registerView({ id: "explorer",  label: "Explorer",         requires: () => true,            render });
+registerView({ id: "matrix",    label: "Change Matrix",    requires: c => c.changes,         render });
+registerView({ id: "analytics", label: "Analytics",        requires: () => true,            render });
+registerView({ id: "glossary",  label: "Definitions",      requires: c => c.definitions > 0, render });
+```
+
+### Adding a New View (Exactly 1 Call)
+
+Adding a new screen to the application requires only a single `registerView` call. The panel container is generated on demand, and navigation automatically shows or hides the tab based on the workbook's capabilities:
+
+```javascript
+registerView({
+  id: "benchmarks",
+  label: "Benchmarks",
+  requires: c => c.metrics > 0,
+  render: targetEl => {
+    targetEl.innerHTML = `
+      <div style="padding: 2rem;">
+        <h2>Benchmarking Metrics Overview</h2>
+        <p>Total metrics loaded: ${state.capabilities.metrics.toLocaleString()}</p>
+      </div>
+    `;
+  }
+});
+```
+
+* **No Disabled Placeholders**: Screens whose requirements are not met are not rendered in navigation.
+* **Automatic Fallback**: If an active screen becomes unavailable upon loading another workbook, or if a deep link hash points to an unavailable view or unknown element, the app safely falls back to the Explorer view.
+* **State Machine Resilience**: The application transitions cleanly between `Empty`, `Loading`, and `Loaded`. If a file read or layout parse fails, the app preserves the previous workbook intact or returns to `Empty` with an actionable error dialog.
 
 ## Independent Tool Disclaimer
 
@@ -13,33 +90,11 @@ The application bundles the APQC Healthcare Provider PCF (v7.2.1 vs v6.1.1) as a
 
 ## Architecture & Single Source of Truth
 
-* **`index.html` is the single source of truth** for the application markup, styles, and client-side logic. All UI components, inspector layouts, event delegations, keyboard shortcuts, and storage safety routines are implemented directly in `index.html`.
-* **Script Table of Contents**: The primary `<script>` block in `index.html` is organized into 18 well-defined sections:
-  1. State Management & Constants
-  2. Safe Local Storage Utilities
-  3. Text Scaling Management
-  4. Theme System & Color Scheme Management
-  5. HTML Escaping & Formatting Utilities
-  6. Data Initialization & Sample Loading
-  7. Process Type & Hierarchy Helpers
-  8. Change Decoding & Analysis
-  9. Tree Navigation & Node Rendering
-  10. Change Table (Matrix) View
-  11. Analytics & Visualizations
-  12. Glossary Terms & Search
-  13. Inspector Drawer & Deep Metadata
-  14. Global Search & Autocomplete
-  15. Layout Panels & View Switching
-  16. Keyboard Shortcuts & A11y
-  17. Excel Workbook Parser (SheetJS integration)
-  18. Application Bootstrap & Event Delegation
+* **`index.html` is the single source of truth** for application markup, styling, and client-side logic. All UI components, inspector layouts, event delegations, keyboard shortcuts, and storage safety routines are implemented directly in `index.html`.
 * **Zero external network dependencies**: Works entirely offline, including over the `file://` protocol or any local static HTTP server.
 * **Storage Safety**: All browser storage interactions route through safe `storeGet` and `storeSet` wrapper functions with `try/catch` guards to support privacy modes, restricted iframe contexts, or storage exceptions gracefully.
 * **Themes**: Supports 4 high-contrast themes: **Dark** (default, key `"dark"`), **Light**, **Indigo Rose**, and **Electric Canary**. All text combinations pass WCAG 2.1 AA contrast requirements ($\ge 4.5:1$).
-* **Dual Data Formats (`data/pcf_data.js` & `data/pcf_data.json`)**:
-  * **`data/pcf_data.js`**: Exposes `window.PCF_DATA = { ... }`, enabling instant out-of-the-box offline exploration over `file://` URLs where browser CORS restrictions prevent `fetch()` from reading local `.json` files.
-  * **`data/pcf_data.json`**: Provides standard, clean JSON for headless pipelines, automated verification tools (`verify_pcf.py`), API clients, and data pipelines.
-  * Both files are generated synchronously from the source workbook using `scripts/build_pcf_json.py` and strictly validated by `scripts/verify_pcf.py`.
+* **Reference Tooling**: `scripts/build_pcf_json.py` acts as a reference CLI parser used by automated test suites to ensure 100% parity across all 16 fields with the client-side JavaScript parser without writing bundled data to disk.
 
 ## Vendor Libraries
 
@@ -52,11 +107,6 @@ The application bundles the APQC Healthcare Provider PCF (v7.2.1 vs v6.1.1) as a
 Project documentation and design reviews are housed in the [`docs/`](docs/) directory:
 * [`docs/APQC_Healthcare_Provider_v721_vs_v611_Review.md`](docs/APQC_Healthcare_Provider_v721_vs_v611_Review.md): Detailed comparative review of APQC Healthcare Provider PCF v7.2.1 vs v6.1.1.
 * [`docs/screenshots/`](docs/screenshots/): Comprehensive visual regression captures across desktop, tablet, text scaling levels, and theme palettes.
-
-## Copyright & Attribution
-
-> **©2022 APQC. ALL RIGHTS RESERVED.**  
-> This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.
 
 ---
 
@@ -90,141 +140,36 @@ If Google Chrome or Chromium is not present on your system, `run_all_tests.sh` w
 ### Test Suites & Execution
 
 #### 1. Data Integrity Suite (`scripts/verify_pcf.py`)
-Validates that the generated Healthcare JS bundle (`data/pcf_data.js`) exactly matches the source Excel workbook (`K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx`), verifying all 13 category counts, renames, definitions, and APQC attribution.
+Validates the Python reference parser across all 6 reference workbooks against the expected counts fixture (`data/workbooks_expected.json`), asserting element counts, new/renamed metrics, definition counts, metric records, and category counts.
 
 ```bash
 python3 scripts/verify_pcf.py
 ```
 
-**Expected Output:**
-```text
-======================================================================
-APQC HEALTHCARE PCF AUTOMATED VERIFICATION SUITE
-======================================================================
-✓ Required files exist.
-✓ Total Elements Assertion: 1,985 elements with 1,985 unique PCF IDs.
-✓ Change Metrics Assertion: 960 NEW, 134 RENAMED, 221 METRICS, 1,187 TOTAL CHANGES.
-✓ Glossary Definitions Assertion: 1,931 definitions successfully joined (54 elements without definition).
-...
-✓ Category Sum Assertion: All 13 category sheets match exact counts (Sum = 1985).
-✓ Rename Syntax Assertion: All 134 renamed_was values are complete and properly formatted.
-✓ Offline JS Bundle Assertion: data/pcf_data.js is aligned with JSON dataset.
-======================================================================
-ALL 8 VERIFICATION CHECKS PASSED SUCCESSFULLY (100% COMPLIANT)
-======================================================================
-```
-
-#### 2. Python Workbook Decoder & Parity Tests (`scripts/test_shared_cases.py`)
-Tests Python workbook parsing logic against both Healthcare and Retail reference workbooks, exercises edge cases (such as whole-token child changes and regex trailing `NEW` handling), and asserts field-by-field equality between Python and JavaScript parsers across all elements and properties.
+#### 2. Python Multi-Workbook Decoder & Parity Tests (`scripts/test_shared_cases.py`)
+Tests Python workbook parsing logic against all six reference workbooks (Healthcare Provider, Retail, City Government, Health Insurance Payor, Cross-Industry v8.0, and Consumer Products v8.0), exercises edge cases (such as whole-token child changes and regex trailing `NEW` handling), verifies layout detection without filename dependency, tests actionable unknown layout errors, and asserts complete field-by-field equality between Python and JavaScript parsers across all elements and 16 properties (including metrics arrays).
 
 ```bash
 python3 scripts/test_shared_cases.py
 ```
 
-**Expected Output:**
-```text
-======================================================================
-RUNNING PYTHON WORKBOOK PARSER TEST SUITE
-======================================================================
-1. Testing Healthcare Workbook: K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx
-  • Elements: 1985 (Expected: 1,985)
-  • New: 960 (Expected: 960)
-  • Renamed: 134 (Expected: 134)
-  • Metrics: 221 (Expected: 221)
-  • Definitions: 1931 (Expected: 1,931)
-✓ Python Healthcare test passed 100%.
-
-2. Testing Retail Workbook: K09276_Retail_v721_vs_Retail_v611_April 2023.xlsx
-  • Elements: 1708 (Expected: 1,708)
-  • New: 608 (Expected: 608)
-  • Renamed: 74 (Expected: 74)
-  • Metrics: 180 (Expected: 180)
-  • Definitions: 1462 (Expected: 1,462)
-✓ Python Retail test passed 100%.
-
-3. Testing decode_changes Unit Test Edge Cases
-  • Case 1 (-10381, c10383, RENAME, WAS:Foo-123, NEW):
-    - Added: [] (Expected: [])
-    - Removed: ['10381'] (Expected: ['10381'])
-    - Changed: ['10383'] (Expected: ['10383'])
-    - Renamed Was: 'Foo-123' (Expected: 'Foo-123')
-    - Is Renamed: True, Is New: False
-  • Case 2 (WAS:Foo , new):
-    - Renamed Was: 'Foo' (Expected: 'Foo')
-    - Is Renamed: True, Is New: False
-  • Case 3 (+1, +2):
-    - Added: ['1', '2'] (Expected: ['1', '2'])
-✓ decode_changes unit tests passed 100%.
-
-4. Testing Python vs JavaScript Parser Parity
-  • Healthcare dataset: 1985 elements compared field-by-field.
-  • Retail dataset: 1708 elements compared field-by-field.
-✓ Full Python vs JavaScript parser parity verified!
-======================================================================
-ALL PYTHON WORKBOOK PARSER TESTS PASSED 100%
-======================================================================
-```
-
 #### 3. Client-Side JavaScript Decoder Tests (`scripts/test_shared_cases.js`)
-Validates client-side workbook decoding in JavaScript via Node.js using `vendor/xlsx.full.min.js`, testing Healthcare, Retail, corrupted workbook rejection, Category ID regex validation (`/^\d+$/`), and unit test strings.
+Validates client-side workbook decoding in JavaScript via Node.js using `vendor/xlsx.full.min.js`, testing all six reference workbooks, structure-based layout detection, actionable unknown layout error reporting, Category ID regex validation (`/^\d+$/`), comma preservation in previous names, and unit test strings.
 
 ```bash
 node scripts/test_shared_cases.js
 ```
 
-**Expected Output:**
-```text
-======================================================================
-RUNNING JAVASCRIPT WORKBOOK PARSER TEST SUITE
-======================================================================
-1. Testing Healthcare Workbook: K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx
-  • Elements: 1985 (Expected: 1,985)
-  • New: 960 (Expected: 960)
-  • Renamed: 134 (Expected: 134)
-  • Metrics: 221 (Expected: 221)
-  • Definitions: 1931 (Expected: 1,931)
-✓ JavaScript Healthcare test passed 100%.
-
-2. Testing Retail Workbook: K09276_Retail_v721_vs_Retail_v611_April 2023.xlsx
-  • Elements: 1708 (Expected: 1,708)
-  • New: 608 (Expected: 608)
-  • Renamed: 74 (Expected: 74)
-  • Metrics: 180 (Expected: 180)
-  • Definitions: 1462 (Expected: 1,462)
-  • Renames containing commas: 9 (Expected: 9)
-  • Retail 4.0 name: "Merchandise Products and Services", definition: "(Empty, as expected)"
-  • Operating split: Category 6.0 is "Operating Processes", Category 7.0 is "Management & Support Services"
-✓ JavaScript Retail test passed 100%.
-
-3. Testing decodeChanges Unit Test Edge Cases
-  • Case 1 (-10381, c10383, RENAME, WAS:Foo-123, NEW):
-    - Added: [] (Expected: [])
-    - Removed: ["10381"] (Expected: ["10381"])
-    - Changed: ["10383"] (Expected: ["10383"])
-    - Renamed Was: "Foo-123" (Expected: "Foo-123")
-    - Is Renamed: true, Is New: false
-  • Case 2 (WAS:Foo , new):
-    - Renamed Was: "Foo" (Expected: "Foo")
-    - Is Renamed: true, Is New: false
-  • Case 3 (+1, +2):
-    - Added: ["1","2"] (Expected: ["1","2"])
-✓ decodeChanges unit tests passed 100%.
-
-4. Testing Deliberately Broken Workbook validation
-  • Correctly caught error: "Missing required worksheet: 'Combined'"
-======================================================================
-ALL JAVASCRIPT WORKBOOK PARSER TESTS PASSED 100%
-======================================================================
-```
-
 #### 4. End-to-End Headless Chrome Verification (`scripts/verify_browser.py`)
 Performs automated browser tests over a local HTTP server (`port 8765`), utilizing modular test runners located in `scripts/browser_tests/`:
-* `test_data.py`: Data integrity, brand elements, attribution, Retail workbook upload and recovery
-* `test_layout.py`: Collapsible sidebar rail and inspector drawer with keyboard shortcuts (`[` and `]`), inspector reference details, squashed section height verification ($\ge$ summary height), view scrolling, and print stylesheet rules
-* `test_scaling.py`: Proportional text scaling at 85%, 100%, 115%, 130%, and 150%, confirming proportional row heights, indentations, and $\Delta$ bars without horizontal page overflow, plus Category 8 expand-all timing benchmarks
-* `test_storage.py`: Storage safety under restricted environments (confirms graceful fallback when `Storage.prototype.getItem` / `setItem` throw `SecurityError`)
-* `test_escaping.py`: XSS injection prevention for element fields and Category ID security validation (rejects invalid category segments not matching `/^\d+$/` and verifies zero attribute injection in DOM templates)
-* `test_themes.py`: Theme switching across Dark, Light, Indigo Rose, and Electric Canary, automated WCAG 2.1 AA contrast ratio tests, and visual screenshot generation in `docs/screenshots/`
+* `test_empty_start.py`: Clean empty startup verification, zero network calls for bundled data, state machine transitions (`Empty` -> `Loading` -> `Loaded`), actionable error dialogs on corrupt/unknown files from Empty and Loaded states (leaving previous state intact), screen hiding (0 definitions & 0 changes hides Matrix and Glossary tabs), and deep link fallback to Explorer.
+* `test_data.py`: Dynamic header and attribution, Retail workbook upload, Close workbook action (`Loaded` -> `Empty`), and corrupt file handling.
+* `test_layout.py`: Collapsible sidebar rail and inspector drawer with keyboard shortcuts (`[` and `]`), inspector reference details, squashed section height verification ($\ge$ summary height), view scrolling, and print stylesheet rules.
+* `test_scaling.py`: Proportional text scaling at 85%, 100%, 115%, 130%, and 150%, confirming proportional row heights, indentations, and $\Delta$ bars without horizontal page overflow, plus Category 8 expand-all timing benchmarks.
+* `test_storage.py`: Storage safety under restricted environments (confirms graceful fallback when `Storage.prototype.getItem` / `setItem` throw `SecurityError`).
+* `test_escaping.py`: XSS injection prevention for element fields and Category ID security validation (rejects invalid category segments not matching `/^\d+$/` and verifies zero attribute injection in DOM templates).
+* `test_themes.py`: Theme switching across Dark, Light, Indigo Rose, and Electric Canary, automated WCAG 2.1 AA contrast ratio tests, and visual screenshot generation in `docs/screenshots/`.
+* `test_multi_workbook.py`: End-to-end browser upload of all six workbooks with parse timing benchmarks (~120–180ms), Family B Glossary verification (2,017 definitions in Cross-Industry and 2,019 in Consumer Products matching raw `Element Description`), benchmarking metrics inspector UI testing (presence when metrics exist, complete omission when none), Level 6 hierarchy indentation and dynamic `#level-filter` options, actionable error handling in upload dialog, and XSS sanitization across metric fields and descriptions.
 
 ```bash
 python3 scripts/verify_browser.py

@@ -1,0 +1,153 @@
+{
+  "healthcare": {
+    "name": "Healthcare Provider",
+    "filename": "K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx",
+    "layout_profile": "family-a-2023",
+    "elements": 1985,
+    "levels": [1, 2, 3, 4, 5],
+    "with_changes": 1187,
+    "new_count": 960,
+    "renamed_count": 134,
+    "metrics_y": 221,
+    "definitions_count": 1931,
+    "metric_rows": 0,
+    "default_operating_categories": ["1", "2", "3", "4", "5"],
+    "was_sample_with_commas": {
+      "raw": "+19946, +19947, -10029, c10028, RENAME, WAS:Survey market and determine community's needs, wants, and perceptions of provider",
+      "expected_was": "Survey market and determine community's needs, wants, and perceptions of provider"
+    },
+    "intro_parsed": {
+      "title": null,
+      "version": null,
+      "compared_to": null,
+      "generated_on": null
+    }
+  },
+  "retail": {
+    "name": "Retail",
+    "filename": "K09276_Retail_v721_vs_Retail_v611_April 2023.xlsx",
+    "layout_profile": "family-a-2023",
+    "elements": 1708,
+    "levels": [1, 2, 3, 4, 5],
+    "with_changes": 762,
+    "new_count": 608,
+    "renamed_count": 74,
+    "metrics_y": 180,
+    "definitions_count": 1463,
+    "definitions_non_empty": 1462,
+    "metric_rows": 0,
+    "default_operating_categories": ["1", "2", "3", "4", "5", "6"],
+    "was_sample_with_commas": {
+      "raw": "RENAME, WAS:Create organizational design (structure, governance, reporting, etc.)",
+      "expected_was": "Create organizational design (structure, governance, reporting, etc.)"
+    },
+    "intro_parsed": {
+      "title": null,
+      "version": null,
+      "compared_to": null,
+      "generated_on": null
+    }
+  },
+  "city_gov": {
+    "name": "City Government",
+    "filename": "K07121_City_Government_v721_vs_City_Government_v610_April 2023.xlsx",
+    "layout_profile": "family-a-2023",
+    "elements": 2100,
+    "levels": [1, 2, 3, 4, 5],
+    "with_changes": 1310,
+    "new_count": 983,
+    "renamed_count": 201,
+    "metrics_y": 229,
+    "definitions_count": 1849,
+    "definitions_non_empty": 1849,
+    "metric_rows": 0,
+    "default_operating_categories": ["1", "2", "3", "4", "5", "6"],
+    "was_sample_with_commas": {
+      "raw": "RENAME, WAS:Identify political and regulatory issues, mandates and limitations",
+      "expected_was": "Identify political and regulatory issues, mandates and limitations"
+    },
+    "intro_parsed": {
+      "title": null,
+      "version": null,
+      "compared_to": null,
+      "generated_on": null
+    }
+  },
+  "payor": {
+    "name": "Health Insurance Payor",
+    "filename": "K07130_Health Insurance Payor_721_vs_Health Insurance Payor_611_April 2023.xlsx",
+    "layout_profile": "family-a-2023",
+    "elements": 2142,
+    "levels": [1, 2, 3, 4, 5, 6],
+    "with_changes": 1181,
+    "new_count": 994,
+    "renamed_count": 94,
+    "metrics_y": 228,
+    "definitions_count": 1848,
+    "definitions_non_empty": 1848,
+    "metric_rows": 0,
+    "default_operating_categories": ["1", "2", "3", "4", "5", "6"],
+    "level_6_count": 13,
+    "was_sample_with_commas": {
+      "raw": "RENAME, WAS:Create organizational design (structure, governance, reporting, etc.)",
+      "expected_was": "Create organizational design (structure, governance, reporting, etc.)"
+    },
+    "intro_parsed": {
+      "title": null,
+      "version": null,
+      "compared_to": null,
+      "generated_on": null
+    }
+  },
+  "cross_industry": {
+    "name": "Cross-Industry v8.0",
+    "filename": "K016808_APQC Process Classification Framework (PCF) - Cross-Industry - Excel Version 8.0.xlsx",
+    "layout_profile": "family-b-2026",
+    "elements": 2017,
+    "levels": [1, 2, 3, 4, 5],
+    "with_changes": 171,
+    "new_count": 107,
+    "renamed_count": 31,
+    "metrics_y": 319,
+    "definitions_count": 2017,
+    "definitions_non_empty": 2017,
+    "metric_rows": 3284,
+    "default_operating_categories": ["1", "2", "3", "4", "5", "6"],
+    "was_sample_with_commas": {
+      "raw": "c10417, c17045, RENAME, WAS:Develop and manage human resources planning, policies, and strategies",
+      "expected_was": "Develop and manage human resources planning, policies, and strategies"
+    },
+    "intro_parsed": {
+      "title": "APQC Cross Industry Process Classification Framework",
+      "version": "v8.0",
+      "compared_to": "v7.4",
+      "generated_on": "2/25/2026"
+    }
+  },
+  "consumer_products": {
+    "name": "Consumer Products v8.0",
+    "filename": "K017170_APQC Process Classification Framework (PCF) - Consumer Products - Excel Version 8.0_0.xlsx",
+    "layout_profile": "family-b-2026",
+    "elements": 2039,
+    "levels": [1, 2, 3, 4, 5],
+    "with_changes": 452,
+    "new_count": 253,
+    "renamed_count": 102,
+    "metrics_y": 325,
+    "definitions_count": 2019,
+    "definitions_non_empty": 2019,
+    "metric_rows": 3346,
+    "sheet_metric_rows_including_header": 3347,
+    "default_operating_categories": ["1", "2", "3", "4", "5", "6"],
+    "was_sample_with_commas": {
+      "raw": "RENAME, WAS: Define and evaluate strategic options to achieve the objectives, +21606, +21607, +21608, +21609, +21610, +21611, +21612, +21613, +21614, -16800, -16802, -16806, -19630",
+      "expected_was": "Define and evaluate strategic options to achieve the objectives, +21606, +21607, +21608, +21609, +21610, +21611, +21612, +21613, +21614, -16800, -16802, -16806, -19630"
+    },
+    "intro_parsed": {
+      "title": "APQC Consumer Products Process Classification Framework",
+      "version": "v8.0",
+      "compared_to": "v7.2.1",
+      "generated_on": null
+    }
+  }
+}

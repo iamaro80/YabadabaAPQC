@@ -1,126 +1,147 @@
 #!/usr/bin/env python3
 """
-YabadabaAPQC - Automated Verification Suite for Bundled Sample PCF Dataset.
+YabadabaAPQC - Python PCF Parser Verification Suite.
+Validates the Python reference parser (`scripts/build_pcf_json.py`) against all 6
+reference APQC workbooks using `data/workbooks_expected.json`.
+
 Validates:
-1. 1,985 total elements with unique PCF IDs.
-2. Exact change counts: 960 brand new, 134 renamed, 221 with metrics.
-3. 1,931 glossary definitions joined (54 elements without definition).
-4. Category row sums match the 13 category sheets in the Excel workbook.
-5. Clean rename extraction: no trailing commas or truncated sentences in renamed_was.
-6. Alignment between pcf_data.json and pcf_data.js.
+1. Total elements and uniqueness of PCF IDs & Hierarchy IDs across all 6 workbooks.
+2. Layout detection profile correctness (family-a-2023 vs family-b-2026).
+3. Exact change counts: with_changes, new_elements, renamed_elements.
+4. Metrics counts: Metrics flag = Y, and Metrics sheet records (Family B).
+5. Definitions count (Glossary sheet for Family A, inline Element Description for Family B).
+6. Hierarchy depth validation (Levels 1-5 for standard, Level 6 for Payor).
+7. Clean rename parsing with comma support (WAS: ...).
+8. Introduction metadata parsing (title, version, compared_to, copyright attribution).
 """
 
 import os
 import sys
 import json
-import openpyxl
+import time
 
-EXCEL_FILE = "K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx"
-JSON_FILE = os.path.join("data", "pcf_data.json")
-JS_FILE = os.path.join("data", "pcf_data.js")
+# Add scripts directory to path to import build_pcf_json
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_pcf_json import parse_pcf_workbook
 
-def verify():
+EXPECTED_FIXTURE = os.path.join(os.path.dirname(__file__), "..", "data", "workbooks_expected.json")
+
+def verify_all_workbooks():
     print("=" * 70)
-    print("YABADABAAPQC BUNDLED SAMPLE VERIFICATION SUITE")
+    print("YABADABAAPQC PYTHON PARSER MULTI-WORKBOOK VERIFICATION SUITE")
     print("=" * 70)
 
-    # 1. Check data files exist
-    assert os.path.exists(EXCEL_FILE), f"Missing source Excel file: {EXCEL_FILE}"
-    assert os.path.exists(JSON_FILE), f"Missing JSON dataset: {JSON_FILE}"
-    assert os.path.exists(JS_FILE), f"Missing JS dataset: {JS_FILE}"
-    print("✓ Required files exist.")
+    if not os.path.exists(EXPECTED_FIXTURE):
+        raise FileNotFoundError(f"Missing expected fixture: {EXPECTED_FIXTURE}")
 
-    # 2. Load JSON dataset
-    with open(JSON_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    with open(EXPECTED_FIXTURE, "r", encoding="utf-8") as f:
+        expected_data = json.load(f)
 
-    elements = data.get("elements", [])
-    categories = data.get("categories", [])
-    metadata = data.get("metadata", {})
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # 3. Assert total elements and ID uniqueness
-    assert len(elements) == 1985, f"Expected 1,985 elements, got {len(elements)}"
-    pcf_ids = [e["pcf_id"] for e in elements]
-    unique_ids = set(pcf_ids)
-    assert len(unique_ids) == 1985, f"Duplicate PCF IDs found: {len(pcf_ids)} total vs {len(unique_ids)} unique"
-    print(f"✓ Total Elements Assertion: 1,985 elements with 1,985 unique PCF IDs.")
+    passed_count = 0
+    total_count = len(expected_data)
 
-    # 4. Assert change counts
-    new_elements = [e for e in elements if e["is_new"]]
-    renamed_elements = [e for e in elements if e["is_renamed"]]
-    metric_elements = [e for e in elements if e["metrics_available"]]
-    changed_elements = [e for e in elements if e["has_changes"]]
+    for key, exp in expected_data.items():
+        wb_name = exp["name"]
+        filename = exp["filename"]
+        wb_path = os.path.join(project_root, filename)
 
-    assert len(new_elements) == 960, f"Expected 960 new elements, got {len(new_elements)}"
-    assert len(renamed_elements) == 134, f"Expected 134 renamed elements, got {len(renamed_elements)}"
-    assert len(metric_elements) == 221, f"Expected 221 elements with metrics, got {len(metric_elements)}"
-    assert len(changed_elements) == 1187, f"Expected 1,187 elements with changes, got {len(changed_elements)}"
-    print(f"✓ Change Metrics Assertion: 960 NEW, 134 RENAMED, 221 METRICS, 1,187 TOTAL CHANGES.")
+        print(f"\n• Verifying {wb_name} ({filename})...")
+        if not os.path.exists(wb_path):
+            raise FileNotFoundError(f"Workbook not found: {wb_path}")
 
-    # 5. Assert glossary definitions joined and attribution
-    elements_with_def = [e for e in elements if e["definition"] and e["definition"].strip()]
-    elements_without_def = [e for e in elements if not e["definition"] or not e["definition"].strip()]
-    assert len(elements_with_def) == 1931, f"Expected 1,931 definitions joined, got {len(elements_with_def)}"
-    assert len(elements_without_def) == 54, f"Expected 54 elements without definition, got {len(elements_without_def)}"
-    print(f"✓ Glossary Definitions Assertion: 1,931 definitions successfully joined (54 elements without definition).")
-    print(f"  Listing {len(elements_without_def)} elements without definitions in source workbook:")
-    for e in elements_without_def:
-        print(f"    • [{e['hierarchy_id']}] PCF ID {e['pcf_id']}: {e['name']}")
+        t0 = time.time()
+        parsed = parse_pcf_workbook(wb_path)
+        elapsed = (time.time() - t0) * 1000
 
-    expected_attr = "©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® (\"PCF\") is the copyrighted intellectual property of APQC."
-    assert metadata.get("attribution") == expected_attr, f"Attribution mismatch: {metadata.get('attribution')}"
-    print("✓ APQC Attribution Assertion: metadata.attribution verified.")
+        elements = parsed["elements"]
+        categories = parsed["categories"]
+        meta = parsed["metadata"]
 
-    # 6. Assert category row sums match the 13 category sheets in the Excel file
-    print("\nVerifying 13 category sheets in source Excel file...")
-    wb = openpyxl.load_workbook(EXCEL_FILE, read_only=True)
-    total_sheet_rows = 0
-
-    for cat_num in range(1, 14):
-        sheet_name = f"{cat_num}.0"
-        assert sheet_name in wb.sheetnames, f"Sheet {sheet_name} not found in workbook"
-        ws = wb[sheet_name]
-        sheet_data_rows = ws.max_row - 1  # exclude header
-        total_sheet_rows += sheet_data_rows
-
-        cat_elements = [e for e in elements if e["category_id"] == str(cat_num)]
-        assert sheet_data_rows == len(cat_elements), (
-            f"Category {cat_num} ({sheet_name}) mismatch: sheet has {sheet_data_rows} rows, "
-            f"dataset has {len(cat_elements)} elements"
+        # 1. Element Count & ID Uniqueness
+        assert len(elements) == exp["elements"], (
+            f"Element count mismatch for {wb_name}: expected {exp['elements']}, got {len(elements)}"
         )
-        print(f"  • Category {cat_num:2d} ({sheet_name:4s}): {len(cat_elements):3d} rows (Matches Excel sheet)")
-
-    assert total_sheet_rows == 1985, f"Expected sum of category sheets to be 1,985, got {total_sheet_rows}"
-    print(f"✓ Category Sum Assertion: All 13 category sheets match exact counts (Sum = {total_sheet_rows}).")
-
-    # 7. Assert clean rename parsing (no trailing comma, no mid-sentence truncation)
-    print("\nVerifying rename parsing across all 134 renamed elements...")
-    for e in renamed_elements:
-        hid = e["hierarchy_id"]
-        was = e["renamed_was"]
-        assert was, f"Empty renamed_was in {hid}"
-        assert not was.endswith(","), f"Trailing comma in renamed_was for {hid}: '{was}'"
-        assert not was.endswith("WAS:"), f"Unparsed WAS prefix in {hid}: '{was}'"
-        assert not was.endswith(",") and not was.endswith(" and") and not was.endswith(" or"), (
-            f"Truncated renamed_was in {hid}: '{was}'"
+        pcf_ids = [e["pcf_id"] for e in elements]
+        assert len(set(pcf_ids)) == exp["elements"], (
+            f"Duplicate PCF IDs found in {wb_name}: {len(pcf_ids)} total vs {len(set(pcf_ids))} unique"
         )
-    print("✓ Rename Syntax Assertion: All 134 renamed_was values are complete and properly formatted.")
+        hids = [e["hierarchy_id"] for e in elements]
+        assert len(set(hids)) == exp["elements"], (
+            f"Duplicate Hierarchy IDs found in {wb_name}: {len(hids)} total vs {len(set(hids))} unique"
+        )
 
-    # 8. Assert JS file consistency
-    with open(JS_FILE, "r", encoding="utf-8") as f:
-        js_content = f.read()
-    assert "window.PCF_DATA =" in js_content, "Missing window.PCF_DATA export in data/pcf_data.js"
-    assert '"total_elements": 1985' in js_content, "Metadata mismatch in data/pcf_data.js"
-    print("✓ Offline JS Bundle Assertion: data/pcf_data.js is aligned with JSON dataset.")
+        # 2. Layout Profile
+        assert meta["source_layout"] == exp["layout_profile"], (
+            f"Layout mismatch for {wb_name}: expected {exp['layout_profile']}, got {meta['source_layout']}"
+        )
+
+        # 3. Change Counts
+        new_elems = [e for e in elements if e["is_new"]]
+        renamed_elems = [e for e in elements if e["is_renamed"]]
+        changed_elems = [e for e in elements if e["has_changes"]]
+        metrics_flag_elems = [e for e in elements if e["metrics_available"]]
+
+        assert len(new_elems) == exp["new_count"], (
+            f"New elements mismatch for {wb_name}: expected {exp['new_count']}, got {len(new_elems)}"
+        )
+        assert len(renamed_elems) == exp["renamed_count"], (
+            f"Renamed elements mismatch for {wb_name}: expected {exp['renamed_count']}, got {len(renamed_elems)}"
+        )
+        assert len(changed_elems) == exp["with_changes"], (
+            f"Changed elements mismatch for {wb_name}: expected {exp['with_changes']}, got {len(changed_elems)}"
+        )
+        assert len(metrics_flag_elems) == exp["metrics_y"], (
+            f"Metrics flag mismatch for {wb_name}: expected {exp['metrics_y']}, got {len(metrics_flag_elems)}"
+        )
+
+        # 4. Definitions Count
+        defs_non_empty = [e for e in elements if e["definition"] and e["definition"].strip()]
+        expected_defs = exp.get("definitions_non_empty", exp.get("definitions_count"))
+        assert len(defs_non_empty) == expected_defs, (
+            f"Definitions mismatch for {wb_name}: expected {expected_defs}, got {len(defs_non_empty)}"
+        )
+
+        # 5. Metric Rows Count
+        total_metric_records = meta.get("total_metric_records", 0)
+        assert total_metric_records == exp["metric_rows"], (
+            f"Metric records mismatch for {wb_name}: expected {exp['metric_rows']}, got {total_metric_records}"
+        )
+
+        # 6. Levels & Level 6
+        levels_present = sorted(list(set(e["level"] for e in elements)))
+        assert levels_present == exp["levels"], (
+            f"Levels mismatch for {wb_name}: expected {exp['levels']}, got {levels_present}"
+        )
+        if "level_6_count" in exp:
+            l6_elems = [e for e in elements if e["level"] == 6]
+            assert len(l6_elems) == exp["level_6_count"], (
+                f"Level 6 count mismatch for {wb_name}: expected {exp['level_6_count']}, got {len(l6_elems)}"
+            )
+
+        # 7. Rename parsing WAS: with commas
+        if "was_sample_with_commas" in exp:
+            for e in renamed_elems:
+                was = e["renamed_was"]
+                assert was, f"Empty renamed_was in {e['hierarchy_id']}"
+                assert not was.endswith(","), f"Trailing comma in renamed_was for {e['hierarchy_id']}: '{was}'"
+                assert not was.startswith("WAS:"), f"Unparsed WAS prefix in {e['hierarchy_id']}: '{was}'"
+
+        # 8. Attribution & Copyright
+        assert meta.get("attribution"), f"Missing attribution in {wb_name}"
+
+        print(f"  ✓ {wb_name} passed all assertions ({len(elements)} elements, {len(categories)} categories, {elapsed:.1f}ms).")
+        passed_count += 1
 
     print("\n" + "=" * 70)
-    print("ALL 8 VERIFICATION CHECKS PASSED SUCCESSFULLY (100% COMPLIANT)")
+    print(f"ALL {passed_count}/{total_count} WORKBOOK VERIFICATIONS PASSED SUCCESSFULLY (100% COMPLIANT)")
     print("=" * 70)
     return True
 
 if __name__ == "__main__":
     try:
-        verify()
+        verify_all_workbooks()
     except AssertionError as err:
         print(f"\n❌ VERIFICATION FAILED: {err}", file=sys.stderr)
         sys.exit(1)

@@ -5,11 +5,16 @@ Data integrity, attribution, and workbook upload/reset browser tests.
 import os
 import time
 import base64
+from browser_tests.cdp_client import load_workbook
 
 def run_data_tests(client, project_dir):
     print("\n" + "="*70)
     print("PHASE 1A: DATA INTEGRITY & ATTRIBUTION CHECKS")
     print("="*70)
+
+    healthcare_path = os.path.join(project_dir, "K07128_Healthcare Provider_v721_vs_Healthcare Provider_v611_April 2023.xlsx")
+    if client.evaluate("state.appState") != "Loaded":
+        load_workbook(client, healthcare_path)
 
     totals = client.evaluate("""({
         framework: state.data.metadata.framework,
@@ -39,30 +44,30 @@ def run_data_tests(client, project_dir):
     assert "©2022 APQC" in footer_attr, "Footer attribution missing"
     print(f"Footer Attribution: {footer_attr[:60]}... [OK]")
 
-    # Brand & Rebrand Assertions
+    # Brand & Dynamic Header Assertions
     brand_info = client.evaluate("""({
         brandTitle: document.querySelector('.brand-title')?.textContent.trim(),
         headerTitle: document.getElementById('header-framework-title')?.textContent.trim(),
         headerVersion: document.getElementById('header-version-badge')?.textContent.trim(),
         pageTitle: document.title,
         footerDisclaimer: document.getElementById('footer-disclaimer')?.textContent.trim(),
-        resetBtnLabel: document.getElementById('reset-default-pcf-btn')?.textContent.trim(),
+        closeBtnLabel: document.getElementById('close-workbook-btn')?.textContent.trim(),
         logoUseHref: document.querySelector('.header-logo use')?.getAttribute('href')
     })""")
     print(f"Brand Title: {brand_info['brandTitle']} (expected: YabadabaAPQC)")
-    print(f"Header Subtitle: {brand_info['headerTitle']} (expected: Sample data: Healthcare Provider)")
-    print(f"Header Version Badge: '{brand_info['headerVersion']}' (expected empty for sample data)")
+    print(f"Header Title: {brand_info['headerTitle']} (expected: APQC Healthcare Provider PCF)")
+    print(f"Header Version Badge: '{brand_info['headerVersion']}' (expected: v7.2.1)")
     print(f"Page Title: {brand_info['pageTitle']} (expected: YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1)")
     print(f"Footer Disclaimer: {brand_info['footerDisclaimer']}")
-    print(f"Reset Button Label: {brand_info['resetBtnLabel']} (expected: Back to sample data)")
+    print(f"Close Button Label: {brand_info['closeBtnLabel']} (expected: Close workbook)")
     print(f"Logo Mark: {brand_info['logoUseHref']} (expected: #logo-mark)")
 
     assert brand_info['brandTitle'] == "YabadabaAPQC", "Brand title must be YabadabaAPQC"
-    assert brand_info['headerTitle'] == "Sample data: Healthcare Provider", "Initial subtitle must be 'Sample data: Healthcare Provider'"
-    assert brand_info['headerVersion'] == "", "Initial version badge should be empty for sample data"
+    assert brand_info['headerTitle'] == "APQC Healthcare Provider PCF", "Header title mismatch"
+    assert brand_info['headerVersion'] == "v7.2.1", "Header version badge mismatch"
     assert brand_info['pageTitle'] == "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1", "Page title mismatch"
     assert brand_info['footerDisclaimer'] == "YabadabaAPQC is an independent tool. It is not affiliated with or endorsed by APQC.", "Footer disclaimer mismatch"
-    assert brand_info['resetBtnLabel'] == "Back to sample data", "Reset button text mismatch"
+    assert brand_info['closeBtnLabel'] == "Close workbook", "Close button label mismatch"
     assert brand_info['logoUseHref'] == "#logo-mark", "Logo use href mismatch"
 
     # Upload & Custom Workbook Recovery (Phase 1D)
@@ -108,8 +113,7 @@ def run_data_tests(client, project_dir):
         cat4Def: state.data.elements.find(e => e.hierarchy_id === '4.0')?.definition || '',
         opCats: Array.from(document.querySelectorAll('.process-type-section:first-child .category-nav-item')).length,
         supCats: Array.from(document.querySelectorAll('.process-type-section:last-child .category-nav-item')).length,
-        isCustomLoaded: state.isCustomLoaded,
-        resetBtnVisible: window.getComputedStyle(document.getElementById('reset-default-pcf-btn')).display !== 'none'
+        closeBtnVisible: window.getComputedStyle(document.getElementById('close-workbook-btn')).display !== 'none'
     })""")
     print("\nRetail Framework Verification in UI:")
     print(f"  • Framework Title: {retail_state['framework']}")
@@ -121,7 +125,7 @@ def run_data_tests(client, project_dir):
     print(f"  • Category 4.0 Definition: '{retail_state['cat4Def']}' (Expected empty)")
     print(f"  • Operating Categories count: {retail_state['opCats']} (Expected: 6)")
     print(f"  • Support Categories count: {retail_state['supCats']} (Expected: 7)")
-    print(f"  • Reset Button Visible: {retail_state['resetBtnVisible']} (Expected: True)")
+    print(f"  • Close Button Visible: {retail_state['closeBtnVisible']} (Expected: True)")
 
     assert retail_state['elements'] == 1708, f"Expected 1708 elements, got {retail_state['elements']}"
     assert retail_state['newCount'] == 608, f"Expected 608 new, got {retail_state['newCount']}"
@@ -131,7 +135,7 @@ def run_data_tests(client, project_dir):
     assert retail_state['cat4Def'] == "", "Retail 4.0 should have empty definition"
     assert retail_state['opCats'] == 6, f"Expected 6 operating categories for Retail, got {retail_state['opCats']}"
     assert retail_state['supCats'] == 7, f"Expected 7 support categories for Retail, got {retail_state['supCats']}"
-    assert retail_state['resetBtnVisible'], "Reset to default button should be visible when custom workbook loaded"
+    assert retail_state['closeBtnVisible'], "Close button should be visible when custom workbook loaded"
 
     # Check Dynamic Header & Title for Custom Workbook
     custom_titles = client.evaluate("""({
@@ -155,23 +159,29 @@ def run_data_tests(client, project_dir):
     assert custom_titles['pageTitle'] == "YabadabaAPQC · APQC Retail PCF v7.2.1", "Custom page title mismatch"
     assert custom_titles['csvFilename'] == "yabadabaapqc_retail_explorer.csv", "CSV export filename pattern mismatch"
 
-    # Test Reset to Default
-    client.evaluate("document.getElementById('reset-default-pcf-btn').click()")
+    # Test Close Workbook Action and Reload Healthcare
+    print("\n--- Testing Close Workbook Action & Reload Healthcare ---")
+    client.evaluate("document.getElementById('close-workbook-btn').click()")
     time.sleep(0.3)
-    restored_elements = client.evaluate("state.data.elements.length")
-    is_custom = client.evaluate("state.isCustomLoaded")
+    closed_state = client.evaluate("state.appState")
+    print(f"After Close: appState={closed_state} (Expected: Empty)")
+    assert closed_state == "Empty", "Close button failed to set Empty state"
+
+    load_workbook(client, healthcare_path)
+    restored_elements = client.evaluate("state.data ? state.data.elements.length : 0")
     reset_titles = client.evaluate("""({
         headerTitle: document.getElementById('header-framework-title')?.textContent.trim(),
+        headerVersion: document.getElementById('header-version-badge')?.textContent.trim(),
         pageTitle: document.title
     })""")
-    print(f"After Reset: elements={restored_elements} (Expected: 1985), isCustomLoaded={is_custom} (Expected: False)")
-    print(f"Restored Header Title: {reset_titles['headerTitle']} (expected: Sample data: Healthcare Provider)")
+    print(f"After Reload: elements={restored_elements} (Expected: 1985)")
+    print(f"Restored Header Title: {reset_titles['headerTitle']} (expected: APQC Healthcare Provider PCF)")
     print(f"Restored Page Title: {reset_titles['pageTitle']} (expected: YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1)")
 
-    assert restored_elements == 1985, "Reset failed to restore Healthcare dataset"
-    assert not is_custom, "isCustomLoaded should be false after reset"
-    assert reset_titles['headerTitle'] == "Sample data: Healthcare Provider", "Header title did not reset"
-    assert reset_titles['pageTitle'] == "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1", "Page title did not reset"
+    assert restored_elements == 1985, "Failed to restore Healthcare dataset"
+    assert reset_titles['headerTitle'] == "APQC Healthcare Provider PCF", "Header title did not restore"
+    assert reset_titles['headerVersion'] == "v7.2.1", "Header version badge did not restore"
+    assert reset_titles['pageTitle'] == "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1", "Page title did not restore"
 
     # Test Invalid File Upload Handling
     invalid_result = client.evaluate("""(() => {
