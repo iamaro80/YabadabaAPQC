@@ -1,0 +1,4898 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APQC Process Classification Framework Navigator</title>
+  <meta name="description" content="Process Classification Framework reference and change explorer">
+  
+  <!-- Anti-flash theme & text-scale initialization script (runs synchronously before first paint) -->
+  <script>
+    (function() {
+      try {
+        var allowedThemes = ["dark", "light", "indigo-rose", "electric-canary"];
+        var savedTheme = localStorage.getItem("pcf_theme");
+        if (savedTheme && allowedThemes.indexOf(savedTheme) !== -1) {
+          document.documentElement.setAttribute("data-theme", savedTheme);
+        } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+          document.documentElement.setAttribute("data-theme", "light");
+        } else {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+
+        var savedScale = localStorage.getItem("pcf_text_scale");
+        if (savedScale) {
+          var num = parseFloat(savedScale);
+          if (!isNaN(num) && [0.85, 1, 1.15, 1.3, 1.5].includes(num)) {
+            document.documentElement.style.setProperty("--text-scale", num);
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Offline Client-Side Excel Workbook Parser (SheetJS Community Edition) -->
+  <script src="vendor/xlsx.full.min.js"></script>
+
+  <style>
+    /* Phase 3 CSS Tokens */
+    :root,
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --text-scale: 1;
+      font-size: calc(16px * var(--text-scale));
+
+      /* Obsidian Dark Theme (Default) */
+      --bg-app: #1e1e1e;
+      --bg-panel: #262626;
+      --bg-inspector: #242424;
+      --bg-hover: #2a2a2a;
+      --bg-selected: #2b2745;
+      --edge-selected: #7f6df2;
+      --border: #363636;
+      --border-strong: #4a4a4a;
+      --border-input: #767676;
+      --text: #dadada;
+      --text-muted: #999999;
+      --text-faint: #666666;
+      --accent: #7f6df2;
+      --accent-text: #a882ff;
+      --accent-fill: #483699;
+      --action-fill: #483699;
+      --action-text: #ffffff;
+      --action-border: #7f6df2;
+      --highlight-bg: color-mix(in srgb, var(--accent) 35%, transparent);
+      --status-new: #44cf6e;
+      --status-new-border: #44cf6e;
+      --status-new-bar: #44cf6e;
+      --status-new-bg: color-mix(in srgb, #44cf6e 15%, transparent);
+      --status-renamed: #e9973f;
+      --status-renamed-border: #e9973f;
+      --status-renamed-bar: #e9973f;
+      --status-renamed-bg: color-mix(in srgb, #e9973f 15%, transparent);
+      --status-removed: #ff5a60;
+      --status-removed-border: #ff5a60;
+      --status-removed-bar: #ff5a60;
+      --status-removed-bg: color-mix(in srgb, #ff5a60 15%, transparent);
+      --focus-ring: #a882ff;
+      --chart-bar: #7f6df2;
+      --shadow-modal: 0 1rem 2rem rgba(0, 0, 0, 0.45);
+      --shadow-drawer: -0.5rem 0 1.5rem rgba(0, 0, 0, 0.4);
+      --shadow-toast: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+
+      /* Typography */
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+      --font-reading: Georgia, "Source Serif 4", serif;
+
+      /* Component Sizing in REM so everything scales together */
+      --header-height: 2.75rem; /* 44px at 100% */
+      --sidebar-width: 15rem; /* 240px at 100% */
+      --sidebar-collapsed-width: 2.75rem; /* 44px at 100% */
+      --inspector-width: 22.5rem; /* 360px at 100% */
+      --tree-row-height: 1.875rem; /* 30px at 100% */
+      --tree-indent-unit: 1rem; /* 16px per level at 100% */
+      --tree-delta-bar-width: 2.625rem; /* 42px at 100% */
+      --tree-delta-bar-height: 0.25rem; /* 4px at 100% */
+      --tree-hid-width: 4.5rem; /* Monospace ID column */
+      --touch-target-min: 2rem; /* 32px at 100% */
+      --radius-sm: 0.25rem;
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --transition-fast: 120ms ease;
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg-app: #ffffff;
+      --bg-panel: #f6f6f6;
+      --bg-inspector: #f2f2f2;
+      --bg-hover: #ececec;
+      --bg-selected: #ede9fe;
+      --edge-selected: #6b57d6;
+      --border: #e3e3e3;
+      --border-strong: #d0d0d0;
+      --border-input: #888888;
+      --text: #222222;
+      --text-muted: #5c5c5c;
+      --text-faint: #888888;
+      --accent: #6b57d6;
+      --accent-text: #5b45c7;
+      --accent-fill: #6b57d6;
+      --action-fill: #6b57d6;
+      --action-text: #ffffff;
+      --action-border: #6b57d6;
+      --highlight-bg: color-mix(in srgb, var(--accent) 25%, transparent);
+      --status-new: #1a7a3a;
+      --status-new-border: #1a7a3a;
+      --status-new-bar: #1a7a3a;
+      --status-new-bg: color-mix(in srgb, #1a7a3a 12%, transparent);
+      --status-renamed: #9a5b00;
+      --status-renamed-border: #9a5b00;
+      --status-renamed-bar: #9a5b00;
+      --status-renamed-bg: color-mix(in srgb, #9a5b00 12%, transparent);
+      --status-removed: #c4282d;
+      --status-removed-border: #c4282d;
+      --status-removed-bar: #c4282d;
+      --status-removed-bg: color-mix(in srgb, #c4282d 12%, transparent);
+      --focus-ring: #6b57d6;
+      --chart-bar: #6b57d6;
+      --shadow-modal: 0 1rem 2rem rgba(0, 0, 0, 0.14);
+      --shadow-drawer: -0.5rem 0 1.5rem rgba(0, 0, 0, 0.1);
+      --shadow-toast: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    }
+
+    :root[data-theme="indigo-rose"] {
+      color-scheme: light;
+      --bg-app: #F8F9FD;
+      --bg-panel: #FFFFFF;
+      --bg-inspector: #F3F5FB;
+      --bg-hover: #EBF0F5;
+      --bg-selected: #FFF1F2;
+      --edge-selected: #EE537C;
+      --border: #E5E7EB;
+      --border-strong: #807E9B;
+      --border-input: #807E9B;
+      --text: #363671;
+      --text-muted: #6C6B83; /* darkened from #807E9B to reach >= 4.5:1 on all surfaces */
+      --text-faint: #807E9B;
+      --accent: #EE537C;
+      --accent-text: #3E5196;
+      --accent-fill: #363671;
+      --action-fill: #363671;
+      --action-text: #ffffff;
+      --action-border: #363671;
+      --highlight-bg: #FFE4E8;
+      --status-new: #2E7C70; /* seafoam mint text, darkened from #2F7F73 to reach 4.52:1 on #FFF1F2 */
+      --status-new-border: #52978C;
+      --status-new-bar: #8FC9BF;
+      --status-new-bg: color-mix(in srgb, #8FC9BF 20%, transparent);
+      --status-renamed: #A15C00;
+      --status-renamed-border: #A15C00;
+      --status-renamed-bar: #A15C00;
+      --status-renamed-bg: color-mix(in srgb, #A15C00 12%, transparent);
+      --status-removed: #C4284A;
+      --status-removed-border: #C4284A;
+      --status-removed-bar: #C4284A;
+      --status-removed-bg: color-mix(in srgb, #C4284A 12%, transparent);
+      --focus-ring: #EE537C;
+      --chart-bar: #EE537C;
+      --shadow-modal: 0 1rem 2rem rgba(54, 54, 113, 0.14);
+      --shadow-drawer: -0.5rem 0 1.5rem rgba(54, 54, 113, 0.1);
+      --shadow-toast: 0 0.5rem 1rem rgba(54, 54, 113, 0.08);
+    }
+
+    :root[data-theme="electric-canary"] {
+      color-scheme: light;
+      --bg-app: #FAFAFA;
+      --bg-panel: #FFFFFF;
+      --bg-inspector: #F8FAFC;
+      --bg-hover: #F1F5F9;
+      --bg-selected: #F0F7FF;
+      --edge-selected: #1670EF;
+      --border: #E2E8F0;
+      --border-strong: #2F2F2F;
+      --border-input: #718096;
+      --text: #2F2F2F;
+      --text-muted: #627188; /* darkened from #64748B to reach >= 4.5:1 on #F0F7FF */
+      --text-faint: #64748B;
+      --accent: #1670EF;
+      --accent-text: #156BE5; /* darkened from #1670EF to reach >= 4.5:1 on all surfaces */
+      --accent-fill: #1670EF;
+      --action-fill: #FEEA2D; /* Canary yellow */
+      --action-text: #2F2F2F; /* Dark text on canary yellow */
+      --action-border: #2F2F2F; /* 1px border-strong */
+      --highlight-bg: #FEEA2D;
+      --status-new: #3B7C47; /* emerald text, darkened from #40864D to reach 4.68:1 on #F0F7FF */
+      --status-new-border: #549E69;
+      --status-new-bar: #46B580;
+      --status-new-bg: #E7F4E3;
+      --status-renamed: #A15C00;
+      --status-renamed-border: #A15C00;
+      --status-renamed-bar: #A15C00;
+      --status-renamed-bg: color-mix(in srgb, #A15C00 12%, transparent);
+      --status-removed: #C4284A;
+      --status-removed-border: #C4284A;
+      --status-removed-bar: #C4284A;
+      --status-removed-bg: color-mix(in srgb, #C4284A 12%, transparent);
+      --focus-ring: #1670EF;
+      --chart-bar: #46B580;
+      --shadow-modal: 0 1rem 2rem rgba(0, 0, 0, 0.12);
+      --shadow-drawer: -0.5rem 0 1.5rem rgba(0, 0, 0, 0.08);
+      --shadow-toast: 0 0.5rem 1rem rgba(0, 0, 0, 0.06);
+    }
+
+    /* Reset & Base Elements */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: var(--bg-app);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 0.8125rem; /* 13px at 100% scale */
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    a {
+      color: var(--accent-text);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Global Focus Ring */
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 1px;
+    }
+
+    /* Inline SVG Icon Helpers */
+    .icon {
+      width: 0.875rem;
+      height: 0.875rem;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+      fill: currentColor;
+    }
+
+    /* Layout Skeleton */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Slim Header (44px at 100%) */
+    header.app-header {
+      height: var(--header-height);
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0.75rem;
+      gap: 0.75rem;
+      z-index: 40;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .panel-toggle-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+    .panel-toggle-btn:hover {
+      background-color: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .framework-title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      min-width: 0;
+    }
+    .framework-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .framework-version {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .framework-subtitle {
+      display: none;
+    }
+
+    /* Live Search Input */
+    .header-search {
+      flex: 1;
+      max-width: 24rem;
+      position: relative;
+    }
+    .header-search input {
+      width: 100%;
+      height: 1.75rem;
+      background-color: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 1.75rem 0 1.85rem;
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: border-color var(--transition-fast);
+    }
+    .header-search input:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .header-search svg.search-icon {
+      position: absolute;
+      left: 0.55rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0.8125rem;
+      height: 0.8125rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .header-search .clear-search-btn {
+      position: absolute;
+      right: 0.35rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.125rem;
+      height: 1.125rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+    .header-search .clear-search-btn:hover {
+      color: var(--text);
+    }
+    .search-key-hint {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.74rem;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      pointer-events: none;
+    }
+
+    /* Header View Tabs */
+    .view-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background-color: var(--bg-app);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .view-tab-btn {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-radius: 2px;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+      white-space: nowrap;
+    }
+    .view-tab-btn:hover {
+      color: var(--text);
+    }
+    .view-tab-btn.active {
+      background-color: var(--bg-panel);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Header Actions */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .action-btn {
+      height: 1.75rem;
+      padding: 0 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      color: var(--text);
+      background-color: var(--bg-app);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+    .action-btn:hover {
+      background-color: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+    .action-btn-icon {
+      width: 1.75rem;
+      padding: 0;
+      justify-content: center;
+    }
+    .action-btn-primary {
+      background-color: var(--action-fill);
+      color: var(--action-text);
+      border: 1px solid var(--action-border);
+      font-weight: 600;
+    }
+    .action-btn-primary:hover {
+      background-color: color-mix(in srgb, var(--action-fill) 85%, var(--text));
+      border-color: var(--border-strong);
+    }
+
+    /* Theme Menu Dropdown */
+    .theme-menu-container {
+      position: relative;
+      display: inline-block;
+    }
+    .theme-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 0.35rem);
+      right: 0;
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-modal);
+      min-width: 11.5rem;
+      padding: 0.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      z-index: 100;
+      user-select: none;
+    }
+    .theme-menu-dropdown[hidden] {
+      display: none;
+    }
+    .theme-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      background: none;
+      border: none;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+    .theme-menu-item:hover,
+    .theme-menu-item:focus-visible,
+    .theme-menu-item.focused {
+      background-color: var(--bg-hover);
+      outline: none;
+    }
+    .theme-menu-item.active {
+      font-weight: 600;
+      color: var(--accent-text);
+      background-color: var(--bg-selected);
+    }
+    .theme-swatch {
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1px var(--border);
+    }
+    .theme-swatch-dot {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .theme-item-label {
+      flex: 1;
+    }
+    .theme-item-check {
+      width: 0.85rem;
+      height: 0.85rem;
+      opacity: 0;
+      color: var(--accent-text);
+      flex-shrink: 0;
+    }
+    .theme-menu-item.active .theme-item-check {
+      opacity: 1;
+    }
+
+    /* Text Size Controls (A- / 100% / A+) */
+    .text-scale-group {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-app);
+      height: 1.75rem;
+      overflow: hidden;
+    }
+    .text-scale-btn {
+      width: 1.75rem !important;
+      height: 100% !important;
+      font-size: 0.75rem !important;
+      font-weight: 600;
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .text-scale-btn:hover:not(:disabled) {
+      background-color: var(--bg-hover) !important;
+      color: var(--text) !important;
+    }
+    .text-scale-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .text-scale-val-btn {
+      padding: 0 0.45rem !important;
+      height: 100% !important;
+      font-size: 0.75rem !important;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      border: none !important;
+      border-left: 1px solid var(--border) !important;
+      border-right: 1px solid var(--border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .text-scale-val-btn:hover {
+      background-color: var(--bg-hover) !important;
+      color: var(--accent-text) !important;
+    }
+
+    /* Workspace */
+    .workspace {
+      display: flex;
+      flex: 1 1 0;
+      min-height: 0;
+      height: calc(100vh - var(--header-height));
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Rail (Categories) */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+      overflow: hidden;
+      transition: width var(--transition-fast);
+      position: relative;
+      user-select: none;
+    }
+
+    .sidebar-header {
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-header h2 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    .sidebar-count-badge {
+      font-size: 0.74rem;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.5rem 0.4rem;
+    }
+
+    .process-type-section {
+      margin-bottom: 0.85rem;
+    }
+    .process-type-title {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-faint);
+      padding: 0.3rem 0.45rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .category-nav-item {
+      padding: 0.35rem 0.45rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      border-left: 2px solid transparent;
+      margin-bottom: 1px;
+      transition: background-color var(--transition-fast);
+    }
+    .category-nav-item:hover {
+      background-color: var(--bg-hover);
+    }
+    .category-nav-item.active {
+      background-color: var(--bg-selected);
+      border-left-color: var(--edge-selected);
+    }
+
+    .cat-nav-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .cat-nav-id {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .cat-nav-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .category-nav-item.active .cat-nav-name {
+      color: var(--text);
+    }
+
+    /* Category Change Share Bar (quiet visual progress) */
+    .cat-change-bar-wrap {
+      width: 100%;
+      height: 3px;
+      background-color: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .cat-change-bar-fill {
+      height: 100%;
+      background-color: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Collapsed Sidebar (Rail Mode: 44px) */
+    .sidebar.collapsed {
+      width: var(--sidebar-collapsed-width) !important;
+    }
+    .sidebar.collapsed .sidebar-header h2,
+    .sidebar.collapsed .sidebar-count-badge,
+    .sidebar.collapsed .process-type-title,
+    .sidebar.collapsed .cat-nav-name,
+    .sidebar.collapsed .cat-change-bar-wrap {
+      display: none !important;
+    }
+    .sidebar.collapsed .sidebar-header {
+      padding: 0.65rem 0.2rem;
+      justify-content: center;
+    }
+    .sidebar.collapsed .sidebar-content {
+      padding: 0.35rem 0.2rem;
+    }
+    .sidebar.collapsed .category-nav-item {
+      padding: 0.45rem 0;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-left: none;
+      border-radius: var(--radius-sm);
+    }
+    .sidebar.collapsed .cat-nav-id {
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .sidebar.collapsed .category-nav-item.active {
+      background-color: var(--accent-fill);
+      color: #ffffff !important;
+    }
+    .sidebar.collapsed .category-nav-item.active .cat-nav-id {
+      color: #ffffff !important;
+    }
+
+    /* Center Main Content */
+    main.main-content {
+      flex: 1 1 0;
+      min-height: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-color: var(--bg-app);
+      position: relative;
+    }
+
+    .view-panel {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Explorer View Toolbar */
+    .explorer-toolbar {
+      padding: 0.5rem 0.85rem;
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      height: 1.625rem;
+      padding: 0 0.55rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background-color: var(--bg-app);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+      user-select: none;
+    }
+    .filter-pill:hover {
+      background-color: var(--bg-hover);
+      color: var(--text);
+    }
+    .filter-pill.active {
+      background-color: var(--bg-selected);
+      color: var(--accent-text);
+      border-color: var(--edge-selected);
+      font-weight: 600;
+    }
+
+    .toolbar-select {
+      height: 1.625rem;
+      padding: 0 0.45rem;
+      background-color: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .toolbar-select:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    .visible-count-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 0.3rem;
+      white-space: nowrap;
+    }
+
+    /* Category Hero Area */
+    .category-hero {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-app);
+      flex-shrink: 0;
+    }
+    .hero-meta-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.2rem;
+    }
+    .hero-hid {
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--accent-text);
+    }
+    .hero-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .hero-type-tag {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+    .hero-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      max-width: 90ch;
+      margin-bottom: 0.5rem;
+    }
+    .hero-stats-strip {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .hero-stats-strip strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Tree Outline View */
+    .tree-scroll-container {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.25rem 0;
+      position: relative;
+    }
+
+    .tree-node-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Outline Row (Phase 3 Spec) */
+    .tree-row {
+      display: flex;
+      align-items: center;
+      min-height: var(--tree-row-height);
+      padding-right: 0.75rem;
+      border-bottom: 1px solid var(--bg-hover);
+      border-left: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: background-color var(--transition-fast);
+      gap: 0.45rem;
+    }
+    .tree-row:hover {
+      background-color: var(--bg-hover);
+    }
+    .tree-row.selected {
+      background-color: var(--bg-selected);
+      border-left-color: var(--edge-selected);
+    }
+    .tree-row:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: -2px;
+    }
+
+    /* Tree Chevron Toggle */
+    .tree-chevron-btn {
+      width: 1.125rem;
+      height: 1.125rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      transition: transform var(--transition-fast), color var(--transition-fast);
+    }
+    .tree-chevron-btn:hover {
+      color: var(--text);
+    }
+    .tree-chevron-spacer {
+      width: 1.125rem;
+      height: 1.125rem;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* Monospace Tabular ID Column */
+    .tree-hid {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text);
+      width: var(--tree-hid-width);
+      flex-shrink: 0;
+    }
+
+    /* Process Name */
+    .tree-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.8125rem;
+      color: var(--text);
+      line-height: 1.35;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .tree-row.selected .tree-name {
+      font-weight: 500;
+    }
+
+    /* Status Markers (At most 3 per row) */
+    .row-markers-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+      margin-left: 0.5rem;
+    }
+    .marker-badge {
+      font-size: 0.74rem;
+      font-weight: 500;
+      padding: 0.05rem 0.35rem;
+      border-radius: var(--radius-sm);
+      line-height: 1.2;
+      border: 1px solid currentColor;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    .marker-new {
+      color: var(--status-new);
+    }
+    .marker-renamed {
+      color: var(--status-renamed);
+    }
+    .marker-metrics {
+      color: var(--accent-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* Delta Score Bar (42px x 4px at 100%) */
+    .diff-bar-cell {
+      width: var(--tree-delta-bar-width);
+      height: var(--tree-delta-bar-height);
+      background-color: var(--border);
+      border-radius: 0.125rem;
+      overflow: hidden;
+      flex-shrink: 0;
+      margin-left: 0.35rem;
+    }
+    .diff-bar-fill {
+      height: 100%;
+      background-color: var(--chart-bar, var(--edge-selected));
+      border-radius: 2px;
+    }
+
+    /* Search Highlighting */
+    mark {
+      background-color: var(--highlight-bg);
+      color: var(--text);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    /* Pulse Target on jump */
+    .tree-row.pulse-target {
+      animation: targetPulse 1.4s ease 2;
+    }
+    @keyframes targetPulse {
+      0% { background-color: var(--bg-selected); }
+      50% { background-color: color-mix(in srgb, var(--edge-selected) 40%, var(--bg-selected)); }
+      100% { background-color: var(--bg-selected); }
+    }
+
+    /* App Footer */
+    footer.app-footer {
+      background-color: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      padding: 0.4rem 0.85rem;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    /* Inspector Drawer (Reference-entry Layout) */
+    aside.inspector-drawer {
+      width: var(--inspector-width);
+      background-color: var(--bg-inspector);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+      overflow: hidden;
+      transition: width var(--transition-fast), transform var(--transition-fast);
+      position: relative;
+      z-index: 20;
+    }
+    aside.inspector-drawer.collapsed {
+      width: 0 !important;
+      border-left: none;
+      visibility: hidden;
+    }
+
+    .inspector-header {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background-color: var(--bg-panel);
+    }
+    .inspector-header h3 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: none;
+    }
+    .inspector-close-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+    .inspector-close-btn:hover {
+      background-color: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .inspector-body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+    .inspector-body > * {
+      flex-shrink: 0;
+    }
+
+    /* Reference Entry Components */
+    .ref-breadcrumb {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+    .ref-breadcrumb a, .ref-breadcrumb span {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .ref-breadcrumb a {
+      color: var(--accent-text);
+      cursor: pointer;
+    }
+    .ref-breadcrumb a:hover {
+      text-decoration: underline;
+    }
+    .ref-breadcrumb span.sep {
+      color: var(--text-faint);
+      margin: 0 0.15rem;
+    }
+    .ref-breadcrumb .breadcrumb-ellipsis {
+      color: var(--text-muted);
+      padding: 0 0.2rem;
+      cursor: help;
+      border-radius: var(--radius-sm);
+    }
+    .ref-breadcrumb .breadcrumb-ellipsis:focus,
+    .ref-breadcrumb:focus {
+      outline: 1px solid var(--accent);
+      background-color: var(--bg-hover);
+    }
+
+    .ref-title {
+      font-family: var(--font-reading);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .ref-subline {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ref-definition-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .ref-def-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .ref-definition-text {
+      font-family: var(--font-reading);
+      font-size: 0.86rem;
+      line-height: 1.55;
+      color: var(--text);
+      max-width: 70ch;
+    }
+    .ref-definition-empty {
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .ref-copy-btn {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-panel);
+      cursor: pointer;
+    }
+    .ref-copy-btn:hover {
+      background-color: var(--bg-hover);
+      color: var(--text);
+    }
+
+    /* Distinctive Terms Tags */
+    .ref-terms-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.25rem;
+    }
+    .ref-term-pill {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+    .ref-term-pill:hover {
+      background-color: var(--bg-hover);
+      color: var(--accent-text);
+      border-color: var(--edge-selected);
+    }
+
+    /* Inspector Collapsible Details */
+    details.ref-section {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-panel);
+      overflow: hidden;
+    }
+    details.ref-section summary {
+      padding: 0.5rem 0.65rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    details.ref-section summary::-webkit-details-marker {
+      display: none;
+    }
+    details.ref-section summary:hover {
+      color: var(--text);
+      background-color: var(--bg-hover);
+    }
+    details.ref-section[open] summary {
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .ref-section-body {
+      padding: 0.5rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    .related-extra-items.is-hidden,
+    .related-extra-items.is-hidden .ref-item-row {
+      display: none !important;
+    }
+
+    .ref-toggle-all-btn {
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--accent-text);
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.5rem;
+      cursor: pointer;
+      text-align: center;
+      width: 100%;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+    .ref-toggle-all-btn:hover {
+      background-color: var(--bg-hover);
+      color: var(--text);
+      border-style: solid;
+    }
+
+    .ref-item-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0.35rem 0.4rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+    .ref-item-row:hover {
+      background-color: var(--bg-hover);
+    }
+    .ref-item-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .ref-item-hid {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--accent-text);
+    }
+    .ref-item-name {
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+    .ref-item-excerpt {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Floating Reopen Inspector Tab */
+    .inspector-reopen-tab {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      color: var(--text-muted);
+      padding: 0.65rem 0.35rem;
+      cursor: pointer;
+      display: none;
+      z-index: 25;
+      font-size: 0.74rem;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 0.05em;
+    }
+    .inspector-reopen-tab:hover {
+      color: var(--text);
+      background-color: var(--bg-hover);
+    }
+    .workspace.inspector-collapsed .inspector-reopen-tab {
+      display: block;
+    }
+
+    /* Table View (Change Matrix) */
+    .table-view-container {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+    }
+    .table-scroll-wrapper {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: auto;
+    }
+    table.pcf-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      text-align: left;
+    }
+    table.pcf-data-table thead th {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-strong);
+      padding: 0.5rem 0.7rem;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    table.pcf-data-table thead th:hover {
+      color: var(--text);
+    }
+    table.pcf-data-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+      height: 28px;
+    }
+    table.pcf-data-table tbody tr:hover {
+      background-color: var(--bg-hover);
+    }
+    table.pcf-data-table tbody tr.selected {
+      background-color: var(--bg-selected);
+    }
+    table.pcf-data-table td {
+      padding: 0.35rem 0.7rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .td-mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Analytics View */
+    .dashboard-view-container {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+    }
+    .dash-hero-grid,
+    .dash-charts-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .dash-hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.85rem;
+    }
+    .dash-kpi-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .dash-kpi-lbl {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+    .dash-kpi-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text);
+    }
+    .dash-kpi-sub {
+      font-size: 0.74rem;
+      color: var(--text-faint);
+    }
+
+    .dash-charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .chart-panel-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .chart-panel-card h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Horizontal Bar Chart (Sorted) */
+    .cat-bar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .cat-bar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.75rem;
+    }
+    .cat-bar-lbl {
+      width: 160px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-muted);
+    }
+    .cat-bar-track {
+      flex: 1;
+      height: 8px;
+      background-color: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .cat-bar-value {
+      height: 100%;
+      background-color: var(--chart-bar, var(--accent));
+      border-radius: 4px;
+    }
+    .cat-bar-num {
+      width: 32px;
+      text-align: right;
+      font-family: var(--font-mono);
+      color: var(--text);
+      font-size: 0.74rem;
+    }
+
+    /* Donut Chart with Direct Slice Labels */
+    .donut-chart-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      position: relative;
+    }
+    svg.donut-svg {
+      overflow: visible;
+    }
+
+    /* Glossary View */
+    .glossary-view-container {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 1.25rem 1.5rem;
+      width: 100%;
+    }
+    .glossary-card {
+      max-width: 760px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    #glossary-pagination-bar {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--border);
+      background-color: var(--bg-panel);
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Keyboard Focus Outline for Scrollable Panels */
+    .tree-scroll-container:focus-visible,
+    .table-scroll-wrapper:focus-visible,
+    .dashboard-view-container:focus-visible,
+    .glossary-view-container:focus-visible,
+    .inspector-body:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: -2px;
+    }
+    .glossary-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .glossary-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent-text);
+      cursor: pointer;
+    }
+    .glossary-text {
+      font-family: var(--font-reading);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text);
+      max-width: 70ch;
+    }
+
+    /* Upload Confirmation Modal */
+    .upload-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .upload-modal {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 30rem;
+      box-shadow: var(--shadow-modal);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .upload-modal-header {
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .upload-modal-header h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .upload-modal-body {
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .upload-error-box {
+      color: var(--status-removed);
+      background-color: color-mix(in srgb, var(--status-removed) 12%, transparent);
+      border: 1px solid var(--status-removed);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-group label {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .form-group input[type="text"] {
+      height: 1.875rem;
+      background-color: var(--bg-app);
+      border: 1px solid var(--border-input, var(--border));
+      border-radius: var(--radius-sm);
+      padding: 0 0.55rem;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+    .form-group input[type="text"]:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .op-cats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem;
+      background-color: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem;
+      max-height: 9rem;
+      overflow-y: auto;
+    }
+    .op-cat-checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.74rem;
+      cursor: pointer;
+    }
+    .upload-modal-footer {
+      padding: 0.75rem 1.1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Drag and Drop Overlay */
+    .drag-drop-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: color-mix(in srgb, var(--bg-app) 88%, transparent);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 90;
+      pointer-events: none;
+    }
+    .drag-drop-overlay.active {
+      display: flex;
+    }
+    .drag-drop-card {
+      background-color: var(--bg-panel);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 3rem;
+      text-align: center;
+    }
+
+    /* Toast Notification */
+    .pcf-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 0.55rem 0.95rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      box-shadow: var(--shadow-toast);
+      z-index: 120;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      pointer-events: none;
+    }
+      z-index: 120;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      pointer-events: none;
+    }
+    .pcf-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .tree-row.pulse-target {
+        outline: 2px solid var(--edge-selected) !important;
+      }
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 1200px) {
+      aside.inspector-drawer {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        box-shadow: var(--shadow-drawer);
+      }
+      aside.inspector-drawer.collapsed {
+        transform: translateX(100%);
+        width: var(--inspector-width) !important;
+        visibility: visible;
+      }
+    }
+
+    /* Tablet (700px - 1100px) */
+    @media (max-width: 1100px) {
+      button, .filter-pill, .toolbar-select, .action-btn, .category-nav-item, .tree-row {
+        min-height: var(--touch-target-min);
+      }
+      .sidebar {
+        width: var(--sidebar-collapsed-width);
+      }
+      .sidebar:not(.collapsed) {
+        width: var(--sidebar-collapsed-width);
+      }
+      .sidebar .sidebar-header h2,
+      .sidebar .sidebar-count-badge,
+      .sidebar .process-type-title,
+      .sidebar .cat-nav-name,
+      .sidebar .cat-change-bar-wrap {
+        display: none !important;
+      }
+      .sidebar .category-nav-item {
+        padding: 0.45rem 0;
+        align-items: center;
+        justify-content: center;
+      }
+      .dash-charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Narrow (<700px) */
+    @media (max-width: 700px) {
+      .header-search {
+        max-width: 10rem;
+      }
+      .view-tabs {
+        display: none;
+      }
+      .sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 30;
+        box-shadow: 0.5rem 0 1.5rem var(--shadow-modal);
+      }
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+      aside.inspector-drawer {
+        width: 100% !important;
+      }
+    }
+
+    /* Print Stylesheet (Always uses neutral light theme and 100% text scale) */
+    @media print {
+      :root {
+        --text-scale: 1 !important;
+        font-size: 16px !important;
+        --bg-app: #ffffff !important;
+        --bg-panel: #ffffff !important;
+        --bg-inspector: #ffffff !important;
+        --bg-hover: #ffffff !important;
+        --bg-selected: #f0f0f0 !important;
+        --edge-selected: #333333 !important;
+        --border: #cccccc !important;
+        --border-strong: #999999 !important;
+        --border-input: #999999 !important;
+        --text: #000000 !important;
+        --text-muted: #444444 !important;
+        --text-faint: #666666 !important;
+        --accent: #333333 !important;
+        --accent-text: #000000 !important;
+        --accent-fill: #333333 !important;
+        --action-fill: #333333 !important;
+        --action-text: #ffffff !important;
+        --status-new: #1a7a3a !important;
+        --status-renamed: #9a5b00 !important;
+        --status-removed: #c4282d !important;
+      }
+      body {
+        font-size: 13px !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+      header.app-header, .sidebar, .inspector-drawer, .explorer-toolbar, .inspector-reopen-tab, .text-scale-group {
+        display: none !important;
+      }
+      .workspace, main.main-content,
+      .view-panel,
+      .tree-scroll-container,
+      .table-view-container,
+      .table-scroll-wrapper,
+      .dashboard-view-container,
+      .glossary-view-container {
+        height: auto !important;
+        overflow: visible !important;
+        max-height: none !important;
+      }
+      .tree-row,
+      .glossary-card,
+      .dash-kpi-card,
+      .chart-panel-card {
+        break-inside: avoid;
+        border-bottom: 1px solid #ccc !important;
+      }
+      footer.app-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Inline SVG Symbol Sprite -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-chevron-right" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M6.2 3.3a.75.75 0 0 0 0 1.06L9.88 8 6.2 11.64a.75.75 0 1 0 1.06 1.06l4.22-4.17a.75.75 0 0 0 0-1.06L7.26 3.3a.75.75 0 0 0-1.06 0z"/>
+    </symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M3.3 6.2a.75.75 0 0 1 1.06 0L8 9.88l3.64-3.68a.75.75 0 1 1 1.06 1.06l-4.17 4.22a.75.75 0 0 1-1.06 0L3.3 7.26a.75.75 0 0 1 0-1.06z"/>
+    </symbol>
+    <symbol id="icon-metrics" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M2 13.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 0-1H3V2.5a.5.5 0 0 0-1 0v11zm3-3a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v2H5v-2zm3.5-3a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v5h-3v-5zm3.5-3a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v8h-3v-8z"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zm3.5-1.5L14 14"/>
+    </symbol>
+    <symbol id="icon-sun" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a6 6 0 1 0 7.3 7.3z"/>
+    </symbol>
+    <symbol id="icon-upload" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2.5 11.5v2a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-2M8 10V2M5 5l3-3 3 3"/>
+    </symbol>
+    <symbol id="icon-reset" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2.5 8a5.5 5.5 0 1 1 1.6 3.9M2.5 3v5h5"/>
+    </symbol>
+    <symbol id="icon-sidebar-toggle" viewBox="0 0 16 16">
+      <rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.5" d="M6 2.5v11"/>
+    </symbol>
+    <symbol id="icon-close" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3.5 3.5l9 9M12.5 3.5l-9 9"/>
+    </symbol>
+    <symbol id="icon-copy" viewBox="0 0 16 16">
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.4" d="M3.5 10.5h-1a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v1"/>
+    </symbol>
+    <symbol id="icon-jump" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M6 3h7v7M13 3L6 10"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 16 16">
+      <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 8.5l3.5 3.5L13 4.5"/>
+    </symbol>
+    <symbol id="icon-palette" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8c0 2.21 1.79 4 4 4h.85c.38 0 .65.31.65.65 0 .22-.09.43-.22.58-.15.17-.28.43-.28.77 0 .83.67 1.5 1.5 1.5 4.14 0 7.5-3.36 7.5-7.5C15.5 4.86 12.14 1.5 8 1.5zm-3.75 6a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm3-2a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm3.5 2a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/>
+    </symbol>
+  </svg>
+
+  <div class="app-container">
+    <!-- Slim Header (44px) -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="panel-toggle-btn" id="toggle-sidebar-btn" title="Toggle sidebar ([)" aria-label="Toggle sidebar">
+          <svg class="icon"><use href="#icon-sidebar-toggle"/></svg>
+        </button>
+        <div class="framework-title-group">
+          <span class="framework-title" id="header-framework-title">APQC Healthcare Provider PCF</span>
+          <span class="framework-version" id="header-version-badge">v7.2.1</span>
+        </div>
+      </div>
+
+      <!-- Live Search Box -->
+      <div class="header-search">
+        <svg class="search-icon"><use href="#icon-search"/></svg>
+        <input type="text" id="global-search" placeholder="Search processes, PCF IDs, terms..." autocomplete="off" aria-label="Search processes">
+        <button id="clear-search-btn" class="clear-search-btn" aria-label="Clear search">
+          <svg class="icon" style="width:11px; height:11px;"><use href="#icon-close"/></svg>
+        </button>
+        <span class="search-key-hint">/</span>
+      </div>
+
+      <!-- View Switcher Tabs -->
+      <nav class="view-tabs" aria-label="Application views">
+        <button class="view-tab-btn active" data-view="explorer">Explorer</button>
+        <button class="view-tab-btn" data-view="matrix">Change matrix</button>
+        <button class="view-tab-btn" data-view="analytics">Analytics</button>
+        <button class="view-tab-btn" data-view="glossary">Glossary</button>
+      </nav>
+
+      <!-- Header Action Buttons -->
+      <div class="header-actions">
+        <!-- Text Size Control Group -->
+        <div class="text-scale-group" role="group" aria-label="Text size control">
+          <button id="text-size-dec-btn" class="text-scale-btn" title="Decrease text size (Ctrl + -)" aria-label="Decrease text size">A−</button>
+          <button id="text-size-reset-btn" class="text-scale-val-btn" title="Reset text size to 100% (Ctrl + 0)" aria-label="Reset text size to 100%">
+            <span id="text-size-label">100%</span>
+          </button>
+          <button id="text-size-inc-btn" class="text-scale-btn" title="Increase text size (Ctrl + =)" aria-label="Increase text size">A+</button>
+        </div>
+
+        <button id="upload-pcf-btn" class="action-btn action-btn-primary" title="Load an APQC PCF workbook (.xlsx)">
+          <svg class="icon"><use href="#icon-upload"/></svg>
+          <span>Load workbook</span>
+        </button>
+        <button id="reset-default-pcf-btn" class="action-btn" style="display:none;" title="Reset default dataset">
+          <svg class="icon"><use href="#icon-reset"/></svg>
+          <span>Reset default</span>
+        </button>
+        <input type="file" id="pcf-file-input" accept=".xlsx" style="display:none;" aria-label="PCF workbook file input">
+        <button id="export-csv-btn" class="action-btn action-btn-icon" title="Export current view to CSV" aria-label="Export current view to CSV">
+          <svg class="icon"><use href="#icon-jump"/></svg>
+        </button>
+        
+        <!-- Theme Menu Switcher -->
+        <div class="theme-menu-container" id="theme-menu-container">
+          <button id="theme-toggle-btn" class="action-btn action-btn-icon" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu-dropdown" title="Select theme" aria-label="Select theme">
+            <svg class="icon" id="theme-icon"><use href="#icon-palette"/></svg>
+          </button>
+          <div id="theme-menu-dropdown" class="theme-menu-dropdown" role="menu" aria-label="Themes" hidden>
+            <button type="button" class="theme-menu-item active" role="menuitemradio" aria-checked="true" data-theme="dark" tabindex="0">
+              <span class="theme-swatch" style="background:#1e1e1e; border:1px solid #4a4a4a;"><span class="theme-swatch-dot" style="background:#7f6df2;"></span></span>
+              <span class="theme-item-label">Obsidian dark</span>
+              <svg class="icon theme-item-check"><use href="#icon-check"/></svg>
+            </button>
+            <button type="button" class="theme-menu-item" role="menuitemradio" aria-checked="false" data-theme="light" tabindex="-1">
+              <span class="theme-swatch" style="background:#ffffff; border:1px solid #d0d0d0;"><span class="theme-swatch-dot" style="background:#6b57d6;"></span></span>
+              <span class="theme-item-label">Light</span>
+              <svg class="icon theme-item-check"><use href="#icon-check"/></svg>
+            </button>
+            <button type="button" class="theme-menu-item" role="menuitemradio" aria-checked="false" data-theme="indigo-rose" tabindex="-1">
+              <span class="theme-swatch" style="background:#F8F9FD; border:1px solid #807E9B;"><span class="theme-swatch-dot" style="background:#EE537C;"></span></span>
+              <span class="theme-item-label">Indigo Rose</span>
+              <svg class="icon theme-item-check"><use href="#icon-check"/></svg>
+            </button>
+            <button type="button" class="theme-menu-item" role="menuitemradio" aria-checked="false" data-theme="electric-canary" tabindex="-1">
+              <span class="theme-swatch" style="background:#FAFAFA; border:1px solid #2F2F2F;"><span class="theme-swatch-dot" style="background:#1670EF;"></span></span>
+              <span class="theme-item-label">Electric Canary</span>
+              <svg class="icon theme-item-check"><use href="#icon-check"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Left Rail (Categories) -->
+      <aside class="sidebar" id="app-sidebar" aria-label="Process categories">
+        <div class="sidebar-header">
+          <h2 id="sidebar-heading">Categories</h2>
+          <span class="sidebar-count-badge" id="sidebar-total-badge">1,985 total</span>
+        </div>
+        <div class="sidebar-content" id="sidebar-categories-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </aside>
+
+      <!-- Center Main Pane -->
+      <main class="main-content" id="main-view-container">
+        
+        <!-- View 1: Explorer View -->
+        <section id="view-explorer" class="view-panel" aria-label="Process Explorer">
+          <!-- Filter Toolbar -->
+          <div class="explorer-toolbar">
+            <div class="toolbar-left">
+              <button class="filter-pill active" data-filter="all">All elements</button>
+              <button class="filter-pill" data-filter="changes">Changes only</button>
+              <button class="filter-pill" data-filter="new">New only</button>
+              <button class="filter-pill" data-filter="renamed">Renamed only</button>
+              <button class="filter-pill" data-filter="metrics">Benchmarking</button>
+            </div>
+
+            <div class="toolbar-right">
+              <select id="explorer-cat-filter" class="toolbar-select" aria-label="Filter by category">
+                <option value="all">All categories</option>
+              </select>
+
+              <select id="level-filter" class="toolbar-select" aria-label="Filter by level">
+                <option value="all">All levels (1–5)</option>
+                <option value="1">Level 1: Category</option>
+                <option value="2">Level 2: Process group</option>
+                <option value="3">Level 3: Process</option>
+                <option value="4">Level 4: Activity</option>
+                <option value="5">Level 5: Task</option>
+              </select>
+
+              <button id="expand-all-btn" class="filter-pill" title="Expand all branches">Expand all</button>
+              <button id="collapse-all-btn" class="filter-pill" title="Collapse all branches">Collapse all</button>
+              <button id="reset-filters-btn" class="filter-pill" title="Reset filters">Reset</button>
+
+              <span class="visible-count-text">
+                Showing <strong id="visible-count">0</strong> of <strong id="total-count">0</strong>
+              </span>
+            </div>
+          </div>
+
+          <!-- Category Hero Area -->
+          <div class="category-hero" id="category-hero-section">
+            <div class="hero-meta-row">
+              <span class="hero-hid" id="hero-cat-hid">1.0</span>
+              <h2 class="hero-title" id="hero-cat-name">Develop Vision and Strategy</h2>
+              <span class="hero-type-tag" id="hero-cat-type">Operating processes</span>
+            </div>
+            <p class="hero-desc" id="hero-cat-desc"></p>
+            <div class="hero-stats-strip" id="hero-cat-metrics"></div>
+          </div>
+
+          <!-- Tree Scroll Area -->
+          <div class="tree-scroll-container" id="process-nodes-container" role="tree" tabindex="0" aria-label="Process hierarchy tree">
+            <!-- Outline rows rendered by JS -->
+          </div>
+        </section>
+
+        <!-- View 2: Change Matrix & Audit Table View -->
+        <section id="view-matrix" class="view-panel" style="display:none;" aria-label="Change audit matrix">
+          <div class="table-view-container">
+            <div class="explorer-toolbar">
+              <div class="toolbar-left">
+                <span style="font-weight:600; font-size:0.8rem;">Change audit inventory</span>
+                <span class="visible-count-text" id="matrix-total-badge">1,187 changes</span>
+              </div>
+              <div class="toolbar-right">
+                <select id="matrix-cat-filter" class="toolbar-select" aria-label="Filter matrix by category">
+                  <option value="all">All categories</option>
+                </select>
+                <select id="matrix-type-filter" class="toolbar-select" aria-label="Filter matrix by change type">
+                  <option value="all">All change types</option>
+                  <option value="new">Brand new only</option>
+                  <option value="renamed">Renamed only</option>
+                  <option value="children">Child additions / removals</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-scroll-wrapper" tabindex="0" role="region" aria-label="Change audit matrix table">
+              <table class="pcf-data-table" id="pcf-matrix-table">
+                <thead>
+                  <tr>
+                    <th data-sort="hid">Hierarchy ID</th>
+                    <th data-sort="pid">PCF ID</th>
+                    <th data-sort="name">Process name</th>
+                    <th data-sort="cat">Category</th>
+                    <th data-sort="level">Level</th>
+                    <th data-sort="diff" style="text-align:right;">Diff score</th>
+                    <th>Change details</th>
+                    <th data-sort="metrics" style="text-align:center;">Metrics</th>
+                  </tr>
+                </thead>
+                <tbody id="matrix-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 3: Analytics Dashboard View -->
+        <section id="view-analytics" class="view-panel" style="display:none;" aria-label="Analytics dashboard">
+          <div class="dashboard-view-container" tabindex="0" role="region" aria-label="Analytics dashboard">
+            <!-- 4 Hero KPI Cards -->
+            <div class="dash-hero-grid">
+              <div class="dash-kpi-card">
+                <div class="dash-kpi-lbl">Total process elements</div>
+                <div class="dash-kpi-val" id="dash-kpi-total">–</div>
+                <div class="dash-kpi-sub">Across all framework categories</div>
+              </div>
+              <div class="dash-kpi-card">
+                <div class="dash-kpi-lbl">New elements in v7.2.1</div>
+                <div class="dash-kpi-val" id="dash-kpi-new" style="color:var(--status-new);">–</div>
+                <div class="dash-kpi-sub" id="dash-kpi-sub-new">Modernized framework coverage</div>
+              </div>
+              <div class="dash-kpi-card">
+                <div class="dash-kpi-lbl">Renamed process elements</div>
+                <div class="dash-kpi-val" id="dash-kpi-renamed" style="color:var(--status-renamed);">–</div>
+                <div class="dash-kpi-sub">Updated terminology and scope</div>
+              </div>
+              <div class="dash-kpi-card">
+                <div class="dash-kpi-lbl">Benchmarking metrics</div>
+                <div class="dash-kpi-val" id="dash-kpi-metrics" style="color:var(--accent-text);">–</div>
+                <div class="dash-kpi-sub">Open Standards Benchmarking (OSB)</div>
+              </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="dash-charts-grid">
+              <!-- Left: Change Intensity by Category (Sorted) -->
+              <div class="chart-panel-card">
+                <h3>Change intensity by category (Difference index)</h3>
+                <div class="cat-bar-list" id="cat-diff-bars">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Right: Change Composition Donut (Direct Labels) -->
+              <div class="chart-panel-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <h3>Change composition</h3>
+                  <select id="donut-cat-filter" class="toolbar-select">
+                    <option value="all">All categories (overall)</option>
+                  </select>
+                </div>
+                <div class="donut-chart-container" id="donut-chart-container">
+                  <!-- SVG donut populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 4: Glossary Terms View -->
+        <section id="view-glossary" class="view-panel" style="display:none;" aria-label="Glossary definitions">
+          <div class="explorer-toolbar">
+            <div class="toolbar-left">
+              <span style="font-weight:600; font-size:0.8rem;">Glossary of process definitions</span>
+              <span class="visible-count-text" id="glossary-subtitle">Defined standard terms</span>
+            </div>
+            <div class="toolbar-right">
+              <input type="text" id="glossary-search" placeholder="Filter definitions..." class="toolbar-select" style="width:200px;" aria-label="Filter definitions">
+            </div>
+          </div>
+          <div class="glossary-view-container" id="glossary-cards-container" tabindex="0" role="region" aria-label="Glossary definitions list">
+            <!-- Populated by JS -->
+          </div>
+          <div id="glossary-pagination-bar" role="navigation" aria-label="Glossary pagination">
+            <!-- Pagination buttons populated by JS -->
+          </div>
+        </section>
+
+        <!-- App Footer with APQC Attribution -->
+        <footer class="app-footer" id="app-footer">
+          <div id="footer-attribution">
+            ©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.
+          </div>
+        </footer>
+      </main>
+
+      <!-- Right Inspector Drawer (Reference-entry Sheet) -->
+      <aside class="inspector-drawer" id="inspector-drawer" aria-label="Process inspector">
+        <div class="inspector-header">
+          <h3>Process inspector</h3>
+          <button class="inspector-close-btn" id="close-inspector-btn" title="Close inspector ([ or ])" aria-label="Close inspector">
+            <svg class="icon"><use href="#icon-close"/></svg>
+          </button>
+        </div>
+        <div class="inspector-body" id="inspector-content">
+          <div style="text-align:center; color:var(--text-muted); margin-top:3rem;">
+            Select any process row to inspect official definitions, parent hierarchy, and related terms.
+          </div>
+        </div>
+      </aside>
+
+      <!-- Floating Reopen Tab when Inspector is collapsed -->
+      <button class="inspector-reopen-tab" id="reopen-inspector-tab" title="Open inspector (])" aria-label="Open inspector">
+        Inspector
+      </button>
+    </div>
+  </div>
+
+  <!-- Upload Confirmation Modal -->
+  <div id="upload-modal-container" class="upload-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+    <div class="upload-modal">
+      <div class="upload-modal-header">
+        <h3 id="upload-modal-title">Load an APQC PCF workbook (.xlsx)</h3>
+        <button id="cancel-upload-x-btn" class="inspector-close-btn" aria-label="Close dialog">
+          <svg class="icon"><use href="#icon-close"/></svg>
+        </button>
+      </div>
+      <div class="upload-modal-body">
+        <div id="upload-dialog-error" class="upload-error-box" style="display:none;">
+        </div>
+        <div id="upload-modal-fields">
+          <p style="font-size:0.78rem; color:var(--text-muted);">
+            The file stays on your device. Confirm framework metadata and category classification before loading.
+          </p>
+          <div class="form-group">
+            <label for="modal-framework-name">Framework name</label>
+            <input type="text" id="modal-framework-name" value="APQC Process Classification Framework">
+          </div>
+          <div class="form-group">
+            <label for="modal-framework-version">Version string</label>
+            <input type="text" id="modal-framework-version" value="v7.2.1">
+          </div>
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label>Operating categories</label>
+              <span style="font-size:0.74rem; color:var(--text-faint);">Checked = operating; unchecked = support</span>
+            </div>
+            <div class="op-cats-grid" id="modal-op-cats-container">
+              <!-- Category checkboxes -->
+            </div>
+          </div>
+          <div id="modal-detected-summary" style="font-size:0.75rem; color:var(--accent-text); padding:0.5rem 0.65rem; background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-sm);">
+            Detected: 0 elements across 0 categories.
+          </div>
+        </div>
+      </div>
+      <div class="upload-modal-footer">
+        <button id="cancel-upload-btn" class="action-btn">Cancel</button>
+        <button id="confirm-upload-btn" class="action-btn action-btn-primary">Load framework</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag and Drop Overlay -->
+  <div id="drag-drop-overlay" class="drag-drop-overlay">
+    <div class="drag-drop-card">
+      <svg class="icon" style="width:36px; height:36px; margin-bottom:0.6rem; color:var(--accent);"><use href="#icon-upload"/></svg>
+      <h3 style="font-size:1.1rem; font-weight:600; color:var(--text);">Drop APQC PCF workbook (.xlsx)</h3>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">The file stays on your device.</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="pcf-toast" class="pcf-toast"></div>
+
+  <!-- Load PCF Dataset from JS (Works offline via file:// protocol) -->
+  <script src="data/pcf_data.js"></script>
+
+  <script>
+    /* Safe Storage Helpers (Item 4) */
+    function storeGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function storeSet(key, value) {
+      try {
+        localStorage.setItem(key, String(value));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    window.storeGet = storeGet;
+    window.storeSet = storeSet;
+
+    // State Management
+    const state = {
+      data: null,
+      activeView: "explorer",
+      selectedCategoryId: "1",
+      selectedElement: null,
+      activeFilter: "all",
+      levelFilter: "all",
+      searchQuery: "",
+      expandedHids: new Set(["1.0"]),
+      matrixSort: { col: "diff", dir: "desc" },
+      theme: (function() {
+        const saved = storeGet("pcf_theme");
+        if (saved && ["dark", "light", "indigo-rose", "electric-canary"].includes(saved)) {
+          return saved;
+        }
+        if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+          return "light";
+        }
+        return "dark";
+      })(),
+      textScale: (function() {
+        const saved = storeGet("pcf_text_scale");
+        if (saved) {
+          const val = parseFloat(saved);
+          if ([0.85, 1.0, 1.15, 1.30, 1.50].includes(val)) return val;
+        }
+        return 1.0;
+      })(),
+      donutCategoryId: "all",
+      glossaryFilterQuery: "",
+      glossaryRenderLimit: 80,
+      _isHandlingHash: false,
+      operatingCategories: new Set(["1", "2", "3", "4", "5"]),
+      termIndex: null,
+      elemTerms: null,
+      elemDistinctive: null,
+      _indexBuildTimeMs: 0,
+      _firstRenderTimeMs: 0,
+      isCustomLoaded: false,
+      isSingleVersion: false
+    };
+    window.state = state;
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function getChildrenMap() {
+      if (!state._childrenMap && state.data) {
+        state._childrenMap = {};
+        state.data.elements.forEach(e => {
+          const p = e.parent_hierarchy_id || "";
+          if (!state._childrenMap[p]) state._childrenMap[p] = [];
+          state._childrenMap[p].push(e);
+        });
+      }
+      return state._childrenMap || {};
+    }
+
+    function getElementByHidMap() {
+      if (!state._byHidMap && state.data) {
+        state._byHidMap = {};
+        state.data.elements.forEach(e => {
+          state._byHidMap[e.hierarchy_id] = e;
+        });
+      }
+      return state._byHidMap || {};
+    }
+
+    function getElementByIdMap() {
+      if (!state._byIdMap && state.data) {
+        state._byIdMap = {};
+        state.data.elements.forEach(e => {
+          state._byIdMap[e.id] = e;
+          if (e.pcf_id) state._byIdMap[e.pcf_id] = e;
+          if (e.hierarchy_id) state._byIdMap[e.hierarchy_id] = e;
+        });
+      }
+      return state._byIdMap || {};
+    }
+
+    // Stop words for distinctive term indexing (Item 5)
+    // Filters common grammatical words and generic process verbs
+    const STOP_WORDS = new Set([
+      "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't",
+      "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can",
+      "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down",
+      "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't",
+      "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself",
+      "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's",
+      "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off",
+      "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same",
+      "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that",
+      "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they",
+      "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", "under", "until", "up",
+      "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren't", "what", "what's",
+      "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with",
+      "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself",
+      "yourselves", "process", "processes", "manage", "managing", "management", "develop", "developing", "perform",
+      "performing", "include", "includes", "including", "ensure", "ensuring", "provide", "providing", "deliver",
+      "delivering", "delivery", "plan", "planning", "relate", "related", "relating", "direct", "directly",
+      // Weak and generic words (Item 5)
+      "begin", "begins", "beginning", "selected", "selecting", "selection", "revised", "revising", "revision",
+      "define", "defines", "defined", "defining", "appropriate", "various", "multiple", "such", "identify",
+      "identifies", "identified", "identifying"
+    ]);
+
+    // Simple documented light stemmer for English process terminology (Item 5)
+    // Strips common inflections (-ing, -ed, -es, -s, -ion, -e) so word forms merge
+    function lightStem(word) {
+      if (!word || word.length < 4) return word;
+      if (word.endsWith("ing") && word.length > 5) return word.slice(0, -3);
+      if (word.endsWith("ion") && word.length > 5) return word.slice(0, -3);
+      if (word.endsWith("ed") && word.length > 4) return word.slice(0, -2);
+      if (word.endsWith("es") && word.length > 4) return word.slice(0, -2);
+      if (word.endsWith("s") && !word.endsWith("ss") && word.length > 3) return word.slice(0, -1);
+      if (word.endsWith("e") && word.length > 4) return word.slice(0, -1);
+      return word;
+    }
+
+    function extractTerms(text) {
+      if (!text) return [];
+      const tokens = text.toLowerCase().match(/[a-z0-9]{3,}/g) || [];
+      return tokens
+        .filter(w => !STOP_WORDS.has(w) && !/^\d+$/.test(w))
+        .map(w => ({ raw: w, stem: lightStem(w) }))
+        .filter(item => !STOP_WORDS.has(item.stem));
+    }
+
+    // Data-driven threshold: Ignore ubiquitous terms appearing in > 5% of elements (Item 5)
+    const MAX_TERM_DOC_FREQ_RATIO = 0.05;
+
+    function buildTermIndex() {
+      if (!state.data || !state.data.elements) return;
+      const t0 = performance.now();
+      state.termIndex = new Map();
+      state.elemTerms = new Map();
+      state.elemDistinctive = new Map();
+
+      const N = state.data.elements.length;
+      const maxAllowedDocFreq = Math.floor(N * MAX_TERM_DOC_FREQ_RATIO);
+      const stemDocFreq = new Map();
+
+      state.data.elements.forEach(elem => {
+        const text = (elem.name || "") + " " + (elem.definition || "");
+        const pairs = extractTerms(text);
+        const seenStems = new Set();
+        const elemStemMap = new Map();
+
+        pairs.forEach(({ raw, stem }) => {
+          elemStemMap.set(stem, raw);
+          if (!seenStems.has(stem)) {
+            seenStems.add(stem);
+            stemDocFreq.set(stem, (stemDocFreq.get(stem) || 0) + 1);
+          }
+        });
+        state.elemTerms.set(elem.id, elemStemMap);
+      });
+
+      state.data.elements.forEach(elem => {
+        const stemMap = state.elemTerms.get(elem.id);
+        const termWeights = [];
+        stemMap.forEach((raw, stem) => {
+          const df = stemDocFreq.get(stem) || 1;
+          if (df > maxAllowedDocFreq) return; // Ignore ubiquitous terms (> 5%)
+          const idf = Math.log((N + 1) / (df + 1)) + 1;
+          termWeights.push({ stem, display: raw, idf });
+          if (!state.termIndex.has(stem)) {
+            state.termIndex.set(stem, []);
+          }
+          state.termIndex.get(stem).push({ id: elem.id, weight: idf });
+        });
+        termWeights.sort((a, b) => b.idf - a.idf);
+        // Show at most 5 key terms (Item 5)
+        state.elemDistinctive.set(elem.id, termWeights.slice(0, 5).map(tw => tw.display));
+      });
+
+      const t1 = performance.now();
+      state._indexBuildTimeMs = Math.round(t1 - t0);
+    }
+
+    function getRelatedElements(elem, limit = 10) {
+      if (!state.elemTerms || !state.termIndex) return [];
+      const stemMap = state.elemTerms.get(elem.id);
+      if (!stemMap || stemMap.size === 0) return [];
+
+      // Exclude element itself, its parent, children, and siblings (Item 5)
+      const excludedIds = new Set();
+      excludedIds.add(elem.id);
+      if (elem.parent_hierarchy_id) {
+        const parent = state.data.elements.find(e => e.hierarchy_id === elem.parent_hierarchy_id);
+        if (parent) excludedIds.add(parent.id);
+        state.data.elements.forEach(e => {
+          if (e.parent_hierarchy_id === elem.parent_hierarchy_id && e.id !== elem.id) {
+            excludedIds.add(e.id);
+          }
+        });
+      }
+      state.data.elements.forEach(e => {
+        if (e.parent_hierarchy_id === elem.hierarchy_id) {
+          excludedIds.add(e.id);
+        }
+      });
+
+      const scores = new Map();
+      stemMap.forEach((raw, stem) => {
+        const postings = state.termIndex.get(stem) || [];
+        postings.forEach(p => {
+          if (excludedIds.has(p.id)) return;
+          if (!scores.has(p.id)) {
+            scores.set(p.id, { score: 0, shared: [] });
+          }
+          const entry = scores.get(p.id);
+          entry.score += p.weight;
+          entry.shared.push(raw);
+        });
+      });
+
+      const byId = getElementByIdMap();
+      const results = [];
+      for (const [otherId, entry] of scores.entries()) {
+        const otherElem = byId[otherId];
+        if (otherElem) {
+          results.push({
+            element: otherElem,
+            score: entry.score,
+            sharedTerms: entry.shared
+          });
+        }
+      }
+
+      results.sort((a, b) => b.score - a.score || b.sharedTerms.length - a.sharedTerms.length);
+      return results.slice(0, limit);
+    }
+
+    window.searchForTerm = function(term) {
+      const input = document.getElementById("global-search");
+      if (input) {
+        input.value = term;
+        state.searchQuery = term.toLowerCase();
+        document.getElementById("clear-search-btn").style.display = "flex";
+        switchView("explorer", true);
+        renderExplorerNodes();
+      }
+    };
+
+    function toggleSidebar(forceOpen) {
+      const sidebar = document.getElementById("app-sidebar");
+      if (!sidebar) return;
+      const isCollapsed = (forceOpen !== undefined) ? !forceOpen : !sidebar.classList.contains("collapsed");
+      if (isCollapsed) {
+        sidebar.classList.add("collapsed");
+      } else {
+        sidebar.classList.remove("collapsed");
+      }
+      storeSet("pcf_sidebar_collapsed", isCollapsed ? "1" : "0");
+      updateSidebarToggleBtn();
+    }
+
+    function updateSidebarToggleBtn() {
+      const sidebar = document.getElementById("app-sidebar");
+      const btn = document.getElementById("toggle-sidebar-btn");
+      if (!sidebar || !btn) return;
+      const isCollapsed = sidebar.classList.contains("collapsed");
+      btn.title = isCollapsed ? "Expand sidebar ([)" : "Collapse sidebar ([)";
+    }
+
+    function toggleInspector(forceOpen) {
+      const drawer = document.getElementById("inspector-drawer");
+      const workspace = document.querySelector(".workspace");
+      if (!drawer) return;
+      const isCollapsed = (forceOpen !== undefined) ? !forceOpen : !drawer.classList.contains("collapsed");
+      if (isCollapsed) {
+        drawer.classList.add("collapsed");
+        if (workspace) workspace.classList.add("inspector-collapsed");
+      } else {
+        drawer.classList.remove("collapsed");
+        if (workspace) workspace.classList.remove("inspector-collapsed");
+      }
+      storeSet("pcf_inspector_collapsed", isCollapsed ? "1" : "0");
+    }
+
+    // App Initialization
+    document.addEventListener("DOMContentLoaded", () => {
+      initTheme();
+      initData();
+      initEvents();
+    });
+
+    const ALLOWED_THEMES = ["dark", "light", "indigo-rose", "electric-canary"];
+    const THEME_NAMES = {
+      "dark": "Obsidian dark",
+      "light": "Light",
+      "indigo-rose": "Indigo Rose",
+      "electric-canary": "Electric Canary"
+    };
+
+    function initTheme() {
+      if (!ALLOWED_THEMES.includes(state.theme)) {
+        state.theme = "dark";
+      }
+      document.documentElement.setAttribute("data-theme", state.theme);
+      updateThemeMenuUI();
+
+      if (window.matchMedia && !storeGet("pcf_theme")) {
+        window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
+          if (!storeGet("pcf_theme")) {
+            state.theme = e.matches ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", state.theme);
+            updateThemeMenuUI();
+          }
+        });
+      }
+    }
+
+    function toggleTheme() {
+      const idx = ALLOWED_THEMES.indexOf(state.theme);
+      const nextIdx = (idx + 1) % ALLOWED_THEMES.length;
+      applyTheme(ALLOWED_THEMES[nextIdx]);
+    }
+
+    function applyTheme(t) {
+      if (!ALLOWED_THEMES.includes(t)) return;
+      state.theme = t;
+      storeSet("pcf_theme", state.theme);
+      document.documentElement.setAttribute("data-theme", state.theme);
+      updateThemeMenuUI();
+    }
+
+    function updateThemeMenuUI() {
+      const items = document.querySelectorAll(".theme-menu-item");
+      items.forEach(item => {
+        const val = item.getAttribute("data-theme");
+        const isActive = (val === state.theme);
+        item.classList.toggle("active", isActive);
+        item.setAttribute("aria-checked", isActive ? "true" : "false");
+        item.tabIndex = isActive ? 0 : -1;
+      });
+
+      const btn = document.getElementById("theme-toggle-btn");
+      if (btn) {
+        btn.setAttribute("title", `Theme: ${THEME_NAMES[state.theme] || state.theme} (click to change)`);
+        btn.setAttribute("aria-label", `Current theme: ${THEME_NAMES[state.theme] || state.theme}. Select theme`);
+      }
+      updateThemeIcon();
+    }
+
+    function openThemeMenu() {
+      const dropdown = document.getElementById("theme-menu-dropdown");
+      const btn = document.getElementById("theme-toggle-btn");
+      if (!dropdown || !btn) return;
+      dropdown.removeAttribute("hidden");
+      btn.setAttribute("aria-expanded", "true");
+      const activeItem = dropdown.querySelector(".theme-menu-item.active") || dropdown.querySelector(".theme-menu-item");
+      if (activeItem) activeItem.focus();
+    }
+
+    function closeThemeMenu(returnFocus = true) {
+      const dropdown = document.getElementById("theme-menu-dropdown");
+      const btn = document.getElementById("theme-toggle-btn");
+      if (!dropdown || !btn) return;
+      if (!dropdown.hasAttribute("hidden")) {
+        dropdown.setAttribute("hidden", "");
+        btn.setAttribute("aria-expanded", "false");
+        if (returnFocus) btn.focus();
+      }
+    }
+
+    function updateThemeIcon() {
+      const icon = document.getElementById("theme-icon");
+      if (icon) {
+        icon.innerHTML = `<use href="#icon-palette"/>`;
+      }
+    }
+
+    window.toggleTheme = toggleTheme;
+    window.applyTheme = applyTheme;
+    window.openThemeMenu = openThemeMenu;
+    window.closeThemeMenu = closeThemeMenu;
+
+    const TEXT_SCALE_STEPS = [0.85, 1.0, 1.15, 1.30, 1.50];
+
+    function setTextScale(scale) {
+      const valid = TEXT_SCALE_STEPS.includes(scale) ? scale : 1.0;
+      state.textScale = valid;
+      document.documentElement.style.setProperty("--text-scale", valid);
+      storeSet("pcf_text_scale", String(valid));
+      updateTextScaleUI();
+    }
+
+    function stepTextScale(delta) {
+      const curIndex = TEXT_SCALE_STEPS.indexOf(state.textScale);
+      const idx = curIndex >= 0 ? curIndex : 1;
+      const nextIdx = Math.max(0, Math.min(TEXT_SCALE_STEPS.length - 1, idx + delta));
+      setTextScale(TEXT_SCALE_STEPS[nextIdx]);
+    }
+
+    function updateTextScaleUI() {
+      const label = document.getElementById("text-size-label");
+      if (label) {
+        label.textContent = Math.round(state.textScale * 100) + "%";
+      }
+      const decBtn = document.getElementById("text-size-dec-btn");
+      const incBtn = document.getElementById("text-size-inc-btn");
+      const curIndex = TEXT_SCALE_STEPS.indexOf(state.textScale);
+      if (decBtn) decBtn.disabled = (curIndex <= 0);
+      if (incBtn) incBtn.disabled = (curIndex >= TEXT_SCALE_STEPS.length - 1);
+    }
+
+    window.setTextScale = setTextScale;
+    window.stepTextScale = stepTextScale;
+
+    function initData() {
+      if (window.PCF_DATA) {
+        state.data = window.PCF_DATA;
+        buildApp();
+      } else {
+        fetch("data/pcf_data.json")
+          .then(res => res.json())
+          .then(data => {
+            state.data = data;
+            buildApp();
+          })
+          .catch(err => {
+            console.warn("Dataset load error:", err.message);
+            document.getElementById("main-view-container").innerHTML = `
+              <div style="padding: 3rem; text-align: center; color: var(--status-removed);">
+                <h2>Unable to load PCF dataset</h2>
+                <p style="margin-top:0.5rem; color:var(--text-muted);">Ensure <code>data/pcf_data.js</code> or <code>data/pcf_data.json</code> is accessible.</p>
+              </div>`;
+          });
+      }
+    }
+
+    function buildApp() {
+      const t0 = performance.now();
+      // Clear cached maps
+      state._childrenMap = null;
+      state._byHidMap = null;
+      state._byIdMap = null;
+
+      const meta = state.data.metadata || {};
+      const totalElems = meta.total_elements || state.data.elements.length;
+      const totalNew = meta.total_new || state.data.elements.filter(e => e.is_new).length;
+      const totalRenamed = meta.total_renamed || state.data.elements.filter(e => e.is_renamed).length;
+      const totalMetrics = meta.total_with_metrics || state.data.elements.filter(e => e.metrics_available).length;
+      const totalChanges = meta.total_with_changes || state.data.elements.filter(e => e.has_changes).length;
+      const totalDefs = state.data.elements.filter(e => e.definition && e.definition.trim().length > 0).length;
+
+      // Update Header Titles and Version
+      const titleEl = document.getElementById("header-framework-title");
+      if (titleEl) titleEl.textContent = meta.framework || "APQC Process Classification Framework";
+      const verEl = document.getElementById("header-version-badge");
+      if (verEl) verEl.textContent = meta.version || "v7.2.1";
+
+      // Reset to default button
+      const resetBtn = document.getElementById("reset-default-pcf-btn");
+      if (resetBtn) resetBtn.style.display = state.isCustomLoaded ? "inline-flex" : "none";
+
+      // Attribution Notice in footer
+      const attr = meta.attribution || '©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.';
+      const footerEl = document.getElementById("footer-attribution");
+      if (footerEl) footerEl.textContent = attr;
+
+      // Search placeholder
+      const searchInput = document.getElementById("global-search");
+      if (searchInput) {
+        searchInput.placeholder = `Search ${totalElems.toLocaleString()} processes, PCF IDs, terms...`;
+      }
+
+      const sidebarTotal = document.getElementById("sidebar-total-badge");
+      if (sidebarTotal) {
+        sidebarTotal.textContent = `${totalElems.toLocaleString()} total`;
+      }
+
+      const matrixBadge = document.getElementById("matrix-total-badge");
+      if (matrixBadge) {
+        matrixBadge.textContent = `${totalChanges.toLocaleString()} changes`;
+      }
+
+      const kpiTotal = document.getElementById("dash-kpi-total");
+      if (kpiTotal) kpiTotal.textContent = totalElems.toLocaleString();
+      const kpiNew = document.getElementById("dash-kpi-new");
+      if (kpiNew) kpiNew.textContent = totalNew.toLocaleString();
+      const kpiRenamed = document.getElementById("dash-kpi-renamed");
+      if (kpiRenamed) kpiRenamed.textContent = totalRenamed.toLocaleString();
+      const kpiMetrics = document.getElementById("dash-kpi-metrics");
+      if (kpiMetrics) kpiMetrics.textContent = totalMetrics.toLocaleString();
+      const kpiSubNew = document.getElementById("dash-kpi-sub-new");
+      if (kpiSubNew) {
+        kpiSubNew.textContent = totalElems > 0 ? `${((totalNew / totalElems) * 100).toFixed(1)}% modernized in this release` : "";
+      }
+
+      const glossSub = document.getElementById("glossary-subtitle");
+      if (glossSub) {
+        glossSub.textContent = `${totalDefs.toLocaleString()} defined process terms`;
+      }
+
+      // Single-version mode defensive handling
+      state.isSingleVersion = Boolean(meta.is_single_version || (totalChanges === 0 && totalNew === 0));
+      const matrixTab = document.querySelector('.view-tab-btn[data-view="matrix"]');
+      if (matrixTab) matrixTab.style.display = state.isSingleVersion ? "none" : "";
+      const changePills = document.querySelectorAll('.filter-pill[data-filter="changes"], .filter-pill[data-filter="new"], .filter-pill[data-filter="renamed"]');
+      changePills.forEach(p => p.style.display = state.isSingleVersion ? "none" : "");
+
+      // Build distinctive term index
+      buildTermIndex();
+
+      // Ensure valid active category
+      const firstCat = (state.data.categories && state.data.categories.length > 0) ? state.data.categories[0].category_id : "1";
+      if (!state.data.categories.some(c => c.category_id === state.selectedCategoryId) && state.selectedCategoryId !== "all") {
+        state.selectedCategoryId = firstCat;
+      }
+      if (state.selectedCategoryId !== "all") {
+        state.expandedHids = new Set([state.selectedCategoryId + ".0"]);
+      } else {
+        state.expandedHids = new Set(state.data.categories.map(c => c.category_id + ".0"));
+      }
+
+      renderSidebar();
+      renderCategoryHero();
+      renderExplorerNodes();
+      renderMatrixTable();
+      renderAnalyticsDashboard();
+      renderGlossaryView();
+      populateCategoryFilters();
+
+      // Restore panel collapse states
+      try {
+        if (storeGet("pcf_sidebar_collapsed") === "1") {
+          toggleSidebar(false);
+        } else {
+          toggleSidebar(true);
+        }
+        if (storeGet("pcf_inspector_collapsed") === "1") {
+          toggleInspector(false);
+        }
+      } catch (err) {}
+
+      // Hash routing
+      if (window.location.hash) {
+        applyHash();
+      } else {
+        selectCategory(state.selectedCategoryId, false);
+      }
+
+      const t1 = performance.now();
+      state._firstRenderTimeMs = Math.round(t1 - t0);
+    }
+
+    function initEvents() {
+      // Theme menu trigger & dropdown interactions
+      const themeBtn = document.getElementById("theme-toggle-btn");
+      const themeDropdown = document.getElementById("theme-menu-dropdown");
+      if (themeBtn) {
+        themeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (themeDropdown && themeDropdown.hasAttribute("hidden")) {
+            openThemeMenu();
+          } else {
+            closeThemeMenu(false);
+          }
+        });
+        themeBtn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            openThemeMenu();
+          }
+        });
+      }
+
+      // Theme menu item selection
+      document.querySelectorAll(".theme-menu-item").forEach(item => {
+        item.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const t = item.getAttribute("data-theme");
+          applyTheme(t);
+          closeThemeMenu(true);
+        });
+      });
+
+      // Keyboard navigation inside theme menu
+      if (themeDropdown) {
+        themeDropdown.addEventListener("keydown", (e) => {
+          const items = Array.from(themeDropdown.querySelectorAll(".theme-menu-item"));
+          const currentIdx = items.indexOf(document.activeElement);
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            const nextIdx = (currentIdx + 1) % items.length;
+            items[nextIdx].focus();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            const prevIdx = (currentIdx - 1 + items.length) % items.length;
+            items[prevIdx].focus();
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            if (items.length > 0) items[0].focus();
+          } else if (e.key === "End") {
+            e.preventDefault();
+            if (items.length > 0) items[items.length - 1].focus();
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (document.activeElement && document.activeElement.classList.contains("theme-menu-item")) {
+              document.activeElement.click();
+            }
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeThemeMenu(true);
+          } else if (e.key === "Tab") {
+            closeThemeMenu(false);
+          }
+        });
+      }
+
+      // Close menu on click outside
+      document.addEventListener("click", (e) => {
+        const container = document.getElementById("theme-menu-container");
+        if (container && !container.contains(e.target)) {
+          closeThemeMenu(false);
+        }
+      });
+
+      // View tabs
+      document.querySelectorAll(".view-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".view-tab-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          switchView(btn.getAttribute("data-view"));
+        });
+      });
+
+      // Filter pills
+      document.querySelectorAll(".filter-pill[data-filter]").forEach(pill => {
+        pill.addEventListener("click", () => {
+          document.querySelectorAll(".filter-pill[data-filter]").forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+          state.activeFilter = pill.getAttribute("data-filter");
+          renderExplorerNodes();
+        });
+      });
+
+      // Explorer category filter select
+      const explorerCatSelect = document.getElementById("explorer-cat-filter");
+      if (explorerCatSelect) {
+        explorerCatSelect.addEventListener("change", (e) => {
+          const val = e.target.value;
+          if (val === "all") {
+            state.selectedCategoryId = "all";
+            renderCategoryHero();
+            renderExplorerNodes();
+          } else {
+            selectCategory(val);
+          }
+        });
+      }
+
+      // Level select
+      document.getElementById("level-filter").addEventListener("change", (e) => {
+        state.levelFilter = e.target.value;
+        renderExplorerNodes();
+      });
+
+      // Expand / Collapse All
+      document.getElementById("expand-all-btn").addEventListener("click", expandAllNodes);
+      document.getElementById("collapse-all-btn").addEventListener("click", collapseAllNodes);
+
+      // Reset filters
+      const resetBtn = document.getElementById("reset-filters-btn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          state.activeFilter = "all";
+          state.levelFilter = "all";
+          state.searchQuery = "";
+          searchInput.value = "";
+          clearBtn.style.display = "none";
+          document.getElementById("level-filter").value = "all";
+          document.querySelectorAll(".filter-pill[data-filter]").forEach(p => p.classList.remove("active"));
+          const allPill = document.querySelector('.filter-pill[data-filter="all"]');
+          if (allPill) allPill.classList.add("active");
+          if (state.selectedCategoryId === "all") {
+            state.expandedHids = new Set(state.data.categories.map(c => c.category_id + ".0"));
+          } else {
+            state.expandedHids = new Set([state.selectedCategoryId + ".0"]);
+          }
+          renderExplorerNodes();
+        });
+      }
+
+      // Global Search
+      const searchInput = document.getElementById("global-search");
+      const clearBtn = document.getElementById("clear-search-btn");
+
+      searchInput.addEventListener("input", (e) => {
+        const prevSearch = state.searchQuery;
+        state.searchQuery = e.target.value.trim().toLowerCase();
+        clearBtn.style.display = state.searchQuery ? "flex" : "none";
+        if (prevSearch && !state.searchQuery) {
+          if (state.selectedCategoryId === "all") {
+            state.expandedHids = new Set(state.data.categories.map(c => c.category_id + ".0"));
+          } else {
+            state.expandedHids = new Set([state.selectedCategoryId + ".0"]);
+          }
+          state._lastExactMatchId = null;
+          const catRoot = state.data.elements.find(e => e.category_id === state.selectedCategoryId && e.level === 1);
+          if (catRoot) inspectElement(catRoot, true);
+        }
+        renderExplorerNodes();
+      });
+
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        state.searchQuery = "";
+        clearBtn.style.display = "none";
+        if (state.selectedCategoryId === "all") {
+          state.expandedHids = new Set(state.data.categories.map(c => c.category_id + ".0"));
+        } else {
+          state.expandedHids = new Set([state.selectedCategoryId + ".0"]);
+        }
+        state._lastExactMatchId = null;
+        const catRoot = state.data.elements.find(e => e.category_id === state.selectedCategoryId && e.level === 1);
+        if (catRoot) inspectElement(catRoot, true);
+        renderExplorerNodes();
+      });
+
+      // Text size control buttons
+      document.getElementById("text-size-dec-btn")?.addEventListener("click", () => stepTextScale(-1));
+      document.getElementById("text-size-inc-btn")?.addEventListener("click", () => stepTextScale(1));
+      document.getElementById("text-size-reset-btn")?.addEventListener("click", () => setTextScale(1.0));
+      updateTextScaleUI();
+
+      // Keyboard shortcuts: '/' for search, '[' for sidebar, ']' for inspector drawer, Ctrl+= / Ctrl+- / Ctrl+0 for text size
+      window.addEventListener("keydown", (e) => {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        const isInput = activeTag === "input" || activeTag === "textarea" || activeTag === "select" || (document.activeElement && document.activeElement.isContentEditable);
+        if (isInput) return;
+
+        const isCtrl = e.ctrlKey || e.metaKey;
+        if (isCtrl) {
+          if (e.key === "=" || e.key === "+") {
+            e.preventDefault();
+            stepTextScale(1);
+            return;
+          } else if (e.key === "-" || e.key === "_") {
+            e.preventDefault();
+            stepTextScale(-1);
+            return;
+          } else if (e.key === "0") {
+            e.preventDefault();
+            setTextScale(1.0);
+            return;
+          }
+        }
+
+        if (e.key === "/") {
+          e.preventDefault();
+          searchInput.focus();
+        } else if (e.key === "[") {
+          e.preventDefault();
+          toggleSidebar();
+        } else if (e.key === "]") {
+          e.preventDefault();
+          toggleInspector();
+        }
+      });
+
+      // Panel toggles
+      document.getElementById("toggle-sidebar-btn").addEventListener("click", () => toggleSidebar());
+      document.getElementById("close-inspector-btn").addEventListener("click", () => toggleInspector(false));
+      document.getElementById("reopen-inspector-tab").addEventListener("click", () => toggleInspector(true));
+
+      // Upload buttons
+      const uploadBtn = document.getElementById("upload-pcf-btn");
+      const fileInput = document.getElementById("pcf-file-input");
+      if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleFileSelection(e.target.files[0]);
+            fileInput.value = "";
+          }
+        });
+      }
+
+      // Reset default dataset
+      document.getElementById("reset-default-pcf-btn").addEventListener("click", () => {
+        if (window.PCF_DATA) {
+          state.data = window.PCF_DATA;
+          state.isCustomLoaded = false;
+          buildApp();
+          showToast("Default dataset restored");
+        }
+      });
+
+      // Drag and drop
+      const dragOverlay = document.getElementById("drag-drop-overlay");
+      let dragCounter = 0;
+      window.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        if (dragOverlay) dragOverlay.classList.add("active");
+      });
+      window.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          if (dragOverlay) dragOverlay.classList.remove("active");
+        }
+      });
+      window.addEventListener("dragover", (e) => e.preventDefault());
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        if (dragOverlay) dragOverlay.classList.remove("active");
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFileSelection(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Upload modal controls
+      document.getElementById("cancel-upload-x-btn").addEventListener("click", closeUploadModal);
+      document.getElementById("cancel-upload-btn").addEventListener("click", closeUploadModal);
+      document.getElementById("confirm-upload-btn").addEventListener("click", () => {
+        if (!pendingWorkbookBuffer) return;
+        try {
+          const nameInput = document.getElementById("modal-framework-name");
+          const verInput = document.getElementById("modal-framework-version");
+          const checkedBoxes = document.querySelectorAll("#modal-op-cats-container input[type='checkbox']:checked");
+          const selectedOp = new Set(Array.from(checkedBoxes).map(cb => cb.value));
+
+          const parsed = parsePCFWorkbook(pendingWorkbookBuffer, {
+            fileName: pendingFileName,
+            frameworkName: nameInput.value.trim() || "APQC Process Classification Framework",
+            version: verInput.value.trim() || "v7.2.1",
+            operatingCategories: selectedOp
+          });
+
+          state.data = parsed;
+          state.isCustomLoaded = true;
+          closeUploadModal();
+          buildApp();
+          showToast("Workbook loaded");
+        } catch (err) {
+          console.warn("Workbook parse error:", err.message);
+          showToast(`Error processing workbook: ${err.message}`, true);
+        }
+      });
+
+      // Export CSV
+      document.getElementById("export-csv-btn").addEventListener("click", exportCurrentViewToCSV);
+
+      // Matrix Table Filters & Sort
+      document.getElementById("matrix-cat-filter").addEventListener("change", renderMatrixTable);
+      document.getElementById("matrix-type-filter").addEventListener("change", renderMatrixTable);
+
+      document.querySelectorAll("table.pcf-data-table th[data-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.getAttribute("data-sort");
+          if (state.matrixSort.col === col) {
+            state.matrixSort.dir = state.matrixSort.dir === "asc" ? "desc" : "asc";
+          } else {
+            state.matrixSort.col = col;
+            state.matrixSort.dir = "desc";
+          }
+          renderMatrixTable();
+        });
+      });
+
+      // Glossary Search
+      document.getElementById("glossary-search").addEventListener("input", (e) => {
+        renderGlossaryView(e.target.value.trim().toLowerCase());
+      });
+
+      // URL Hash Routing
+      window.addEventListener("hashchange", applyHash);
+
+      // Accessible Tree Keyboard Navigation
+      const treeContainer = document.getElementById("process-nodes-container");
+      if (treeContainer) {
+        treeContainer.addEventListener("keydown", handleTreeKeyDown);
+      }
+    }
+
+    function switchView(viewName, shouldUpdateHash = true) {
+      state.activeView = viewName;
+      document.querySelectorAll(".view-panel").forEach(p => p.style.display = "none");
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) {
+        target.style.display = "flex";
+      }
+      document.querySelectorAll(".view-tab-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-view") === viewName);
+      });
+      if (shouldUpdateHash) {
+        updateHash();
+      }
+    }
+
+    /* Left Rail (Categories) Rendering */
+    function renderSidebar() {
+      const container = document.getElementById("sidebar-categories-list");
+      container.innerHTML = "";
+
+      const operatingCats = state.data.categories.filter(c => c.process_type === "Operating Processes");
+      const supportCats = state.data.categories.filter(c => c.process_type === "Management & Support Services");
+
+      function createCatSection(title, cats) {
+        const section = document.createElement("div");
+        section.className = "process-type-section";
+
+        const secTitle = document.createElement("div");
+        secTitle.className = "process-type-title";
+        secTitle.innerHTML = `<span>${title}</span><span>${cats.length}</span>`;
+        section.appendChild(secTitle);
+
+        cats.forEach(cat => {
+          const item = document.createElement("div");
+          item.className = `category-nav-item ${cat.category_id === state.selectedCategoryId ? "active" : ""}`;
+          item.setAttribute("data-cat-id", cat.category_id);
+          item.setAttribute("title", `${cat.hierarchy_id} ${cat.name} (${cat.total_elements} elements)`);
+
+          const changePct = cat.total_elements > 0 ? 
+            Math.min(100, Math.round((cat.elements_with_changes / cat.total_elements) * 100)) : 0;
+          
+          item.innerHTML = `
+            <div class="cat-nav-top">
+              <span class="cat-nav-id">${escapeHtml(cat.hierarchy_id)}</span>
+            </div>
+            <div class="cat-nav-name">${escapeHtml(cat.name)}</div>
+            <div class="cat-change-bar-wrap" title="${changePct}% elements modified">
+              <div class="cat-change-bar-fill" style="width: ${changePct}%;"></div>
+            </div>
+          `;
+
+          item.addEventListener("click", () => {
+            selectCategory(cat.category_id);
+          });
+
+          section.appendChild(item);
+        });
+
+        return section;
+      }
+
+      container.appendChild(createCatSection("Operating processes", operatingCats));
+      container.appendChild(createCatSection("Management & support services", supportCats));
+    }
+
+    function selectCategory(catId, shouldUpdateHash = true) {
+      state.selectedCategoryId = catId;
+
+      if (catId === "all") {
+        state.expandedHids = new Set(state.data.categories.map(c => c.category_id + ".0"));
+      } else {
+        state.expandedHids = new Set([catId + ".0"]);
+      }
+
+      const explorerCatSelect = document.getElementById("explorer-cat-filter");
+      if (explorerCatSelect) explorerCatSelect.value = catId;
+
+      document.querySelectorAll(".category-nav-item").forEach(item => {
+        item.classList.toggle("active", item.getAttribute("data-cat-id") === catId);
+      });
+
+      renderCategoryHero();
+      renderExplorerNodes();
+
+      const catRoot = state.data.elements.find(e => e.category_id === catId && e.level === 1);
+      if (catRoot) {
+        inspectElement(catRoot, shouldUpdateHash);
+      } else if (shouldUpdateHash) {
+        updateHash();
+      }
+    }
+
+    function toggleNodeExpansion(hid) {
+      if (state.expandedHids.has(hid)) {
+        state.expandedHids.delete(hid);
+      } else {
+        state.expandedHids.add(hid);
+      }
+      const isExp = state.expandedHids.has(hid);
+      const safeId = hid.replace(/\./g, '_');
+      const childrenBox = document.getElementById(`tree-children-${safeId}`);
+      const btn = document.querySelector(`.tree-chevron-btn[data-hid="${hid}"]`);
+      if (childrenBox) {
+        childrenBox.style.display = isExp ? "flex" : "none";
+      }
+      if (btn) {
+        btn.innerHTML = `<svg class="icon"><use href="#icon-${isExp ? 'chevron-down' : 'chevron-right'}"/></svg>`;
+        btn.title = isExp ? "Collapse sub-processes" : "Expand sub-processes";
+      }
+      const row = document.querySelector(`.tree-row[data-hid="${hid}"]`);
+      if (row) {
+        row.setAttribute("aria-expanded", isExp ? "true" : "false");
+      }
+    }
+
+    function expandAllNodes() {
+      const inScope = (state.selectedCategoryId === "all") ? 
+        state.data.elements : 
+        state.data.elements.filter(e => e.category_id === state.selectedCategoryId);
+      inScope.forEach(e => {
+        state.expandedHids.add(e.hierarchy_id);
+      });
+      renderExplorerNodes();
+    }
+
+    function collapseAllNodes() {
+      state.expandedHids.clear();
+      if (state.selectedCategoryId === "all") {
+        state.data.categories.forEach(c => state.expandedHids.add(c.category_id + ".0"));
+      } else {
+        state.expandedHids.add(state.selectedCategoryId + ".0");
+      }
+      renderExplorerNodes();
+    }
+
+    function renderCategoryHero() {
+      if (state.selectedCategoryId === "all") {
+        const meta = state.data.metadata || {};
+        const totalElems = meta.total_elements || state.data.elements.length;
+        const totalNew = meta.total_new || state.data.elements.filter(e => e.is_new).length;
+        const totalRenamed = meta.total_renamed || state.data.elements.filter(e => e.is_renamed).length;
+        const totalMetrics = meta.total_with_metrics || state.data.elements.filter(e => e.metrics_available).length;
+        const cats = state.data.categories || [];
+        const firstHid = cats.length > 0 ? cats[0].hierarchy_id : "1.0";
+        const lastHid = cats.length > 0 ? cats[cats.length - 1].hierarchy_id : "13.0";
+
+        document.getElementById("hero-cat-hid").textContent = `${firstHid}–${lastHid}`;
+        document.getElementById("hero-cat-name").textContent = "All process categories";
+        document.getElementById("hero-cat-type").textContent = `${meta.framework || "PCF"} framework`;
+        document.getElementById("hero-cat-desc").textContent = `Viewing processes across all ${cats.length} framework categories. Use the filters above to narrow by level or search terms.`;
+        document.getElementById("hero-cat-metrics").innerHTML = `
+          <span>Total: <strong>${totalElems.toLocaleString()}</strong></span>
+          <span style="color:var(--status-new);">New: <strong>${totalNew.toLocaleString()}</strong></span>
+          <span style="color:var(--status-renamed);">Renamed: <strong>${totalRenamed.toLocaleString()}</strong></span>
+          <span style="color:var(--accent-text);">Metrics: <strong>${totalMetrics.toLocaleString()}</strong></span>
+        `;
+        return;
+      }
+
+      const cat = state.data.categories.find(c => c.category_id === state.selectedCategoryId);
+      if (!cat) return;
+
+      const catRoot = state.data.elements.find(e => e.category_id === cat.category_id && e.level === 1);
+
+      document.getElementById("hero-cat-hid").textContent = cat.hierarchy_id;
+      document.getElementById("hero-cat-name").textContent = cat.name;
+      document.getElementById("hero-cat-type").textContent = cat.process_type.toLowerCase();
+      document.getElementById("hero-cat-desc").textContent = catRoot ? (catRoot.definition || "Standard operating process category.") : "";
+
+      const metricsRow = document.getElementById("hero-cat-metrics");
+      metricsRow.innerHTML = `
+        <span>Total: <strong>${cat.total_elements}</strong></span>
+        <span style="color:var(--status-new);">New: <strong>${cat.new_elements}</strong></span>
+        <span style="color:var(--status-renamed);">Renamed: <strong>${cat.renamed_elements}</strong></span>
+        <span style="color:var(--accent-text);">Metrics: <strong>${cat.metrics_available}</strong></span>
+        <span>Max diff: <strong>${cat.max_diff_index}</strong></span>
+      `;
+    }
+
+    /* Tree (Center Pane) Outline Rows Rendering */
+    function renderExplorerNodes() {
+      const container = document.getElementById("process-nodes-container");
+      container.innerHTML = "";
+
+      const childrenMap = getChildrenMap();
+      const byHid = getElementByHidMap();
+
+      const hasSearch = Boolean(state.searchQuery && state.searchQuery.trim());
+      const hasFilterPill = (state.activeFilter !== "all");
+      const hasLevelFilter = (state.levelFilter !== "all");
+      const isFiltering = hasSearch || hasFilterPill || hasLevelFilter;
+
+      let inScope = state.data.elements;
+      if (!hasSearch && state.selectedCategoryId !== "all") {
+        inScope = state.data.elements.filter(e => e.category_id === state.selectedCategoryId);
+      }
+
+      let exactMatch = null;
+      if (hasSearch) {
+        const q = state.searchQuery.trim().toLowerCase();
+        exactMatch = state.data.elements.find(e => 
+          (e.pcf_id && e.pcf_id.toLowerCase() === q) || 
+          (e.hierarchy_id && e.hierarchy_id.toLowerCase() === q)
+        );
+
+        if (exactMatch) {
+          state.selectedElement = exactMatch;
+          state._lastExactMatchId = exactMatch.id;
+          inspectElement(exactMatch, false);
+          updateHash();
+        } else if (state._lastExactMatchId) {
+          state.selectedElement = null;
+          state._lastExactMatchId = null;
+          const drawer = document.getElementById("inspector-drawer");
+          if (drawer) drawer.classList.add("collapsed");
+          updateHash();
+        }
+      } else if (state._lastExactMatchId) {
+        state._lastExactMatchId = null;
+      }
+
+      let matches = inScope;
+      if (hasSearch) {
+        const q = state.searchQuery.trim().toLowerCase();
+        matches = matches.filter(e => {
+          return (e.name && e.name.toLowerCase().includes(q)) ||
+                 (e.pcf_id && e.pcf_id.toLowerCase().includes(q)) ||
+                 (e.hierarchy_id && e.hierarchy_id.toLowerCase().includes(q)) ||
+                 (e.definition && e.definition.toLowerCase().includes(q)) ||
+                 (e.renamed_was && e.renamed_was.toLowerCase().includes(q));
+        });
+      }
+
+      if (state.activeFilter === "changes") {
+        matches = matches.filter(e => e.has_changes);
+      } else if (state.activeFilter === "new") {
+        matches = matches.filter(e => e.is_new);
+      } else if (state.activeFilter === "renamed") {
+        matches = matches.filter(e => e.is_renamed);
+      } else if (state.activeFilter === "metrics") {
+        matches = matches.filter(e => e.metrics_available);
+      }
+
+      if (hasLevelFilter) {
+        const lvl = parseInt(state.levelFilter, 10);
+        matches = matches.filter(e => e.level === lvl);
+      }
+
+      document.getElementById("visible-count").textContent = matches.length.toLocaleString();
+      document.getElementById("total-count").textContent = (hasSearch ? state.data.elements.length : inScope.length).toLocaleString();
+
+      if (matches.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:3rem; color:var(--text-muted);">
+            <p>No matching processes found.</p>
+            <p style="margin-top:0.4rem; font-size:0.75rem;">Try clearing your search query or selecting All levels.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const nodesToRender = new Set();
+      const matchedHids = new Set(matches.map(e => e.hierarchy_id));
+
+      if (isFiltering) {
+        matches.forEach(m => {
+          nodesToRender.add(m.hierarchy_id);
+          let p = m.parent_hierarchy_id;
+          while (p) {
+            nodesToRender.add(p);
+            state.expandedHids.add(p);
+            const parentElem = byHid[p];
+            p = parentElem ? parentElem.parent_hierarchy_id : null;
+          }
+        });
+      } else {
+        inScope.forEach(e => nodesToRender.add(e.hierarchy_id));
+      }
+
+      if (exactMatch) {
+        nodesToRender.add(exactMatch.hierarchy_id);
+        let p = exactMatch.parent_hierarchy_id;
+        while (p) {
+          nodesToRender.add(p);
+          state.expandedHids.add(p);
+          const parentElem = byHid[p];
+          p = parentElem ? parentElem.parent_hierarchy_id : null;
+        }
+      }
+
+      let rootElements = [];
+      if (hasSearch || state.selectedCategoryId === "all") {
+        rootElements = state.data.elements.filter(e => e.level === 1);
+      } else {
+        rootElements = state.data.elements.filter(e => e.category_id === state.selectedCategoryId && e.level === 1);
+      }
+
+      // Max diff index in dataset for scaling 42px diff bar
+      const maxDatasetDiff = Math.max(1, state.data.elements.reduce((max, e) => Math.max(max, e.diff_index || 0), 0));
+
+      function renderTreeNode(elem) {
+        if (!nodesToRender.has(elem.hierarchy_id)) return null;
+
+        const allChildren = childrenMap[elem.hierarchy_id] || [];
+        const children = isFiltering ? 
+          allChildren.filter(c => nodesToRender.has(c.hierarchy_id)) : 
+          allChildren;
+
+        const hasChildren = children.length > 0;
+        const isExpanded = state.expandedHids.has(elem.hierarchy_id);
+        const isExactMatch = exactMatch && (exactMatch.id === elem.id || exactMatch.pcf_id === elem.pcf_id);
+        const isSelected = state.selectedElement && (state.selectedElement.id === elem.id || state.selectedElement.pcf_id === elem.pcf_id);
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "tree-node-wrapper";
+        wrapper.setAttribute("data-hid", elem.hierarchy_id);
+
+        const row = document.createElement("div");
+        row.className = `tree-row ${isSelected ? "selected" : ""} ${isExactMatch ? "pulse-target" : ""}`;
+        row.setAttribute("data-id", elem.id);
+        row.setAttribute("data-hid", elem.hierarchy_id);
+        row.setAttribute("role", "treeitem");
+        row.setAttribute("aria-level", String(elem.level));
+        row.setAttribute("aria-selected", isSelected ? "true" : "false");
+        row.setAttribute("tabindex", isSelected ? "0" : "-1");
+        if (hasChildren) {
+          row.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+        }
+
+        // Level indentation in rem (scales with --text-scale)
+        const indentRem = ((elem.level - 1) * 1.0 + 0.375).toFixed(3);
+        row.style.paddingLeft = `${indentRem}rem`;
+
+        // Highlight search query
+        let titleHtml = escapeHtml(elem.name);
+        if (state.searchQuery && state.searchQuery.trim()) {
+          try {
+            const escaped = escapeRegExp(state.searchQuery.trim());
+            const reg = new RegExp(`(${escaped})`, "gi");
+            titleHtml = titleHtml.replace(reg, "<mark>$1</mark>");
+          } catch (e) {}
+        }
+
+        // At most three markers: New, Renamed, Metrics
+        let markersHtml = "";
+        if (elem.is_new) {
+          markersHtml += '<span class="marker-badge marker-new">New</span>';
+        }
+        if (elem.is_renamed) {
+          markersHtml += '<span class="marker-badge marker-renamed">Renamed</span>';
+        }
+        if (elem.metrics_available) {
+          markersHtml += '<span class="marker-metrics" title="Benchmark metrics available" aria-label="Benchmark metrics available"><svg class="icon"><use href="#icon-metrics"/></svg></span>';
+        }
+
+        // Diff Score bar (scales with --text-scale)
+        const diffScore = elem.diff_index || 0;
+        const diffRatio = maxDatasetDiff > 0 ? (diffScore / maxDatasetDiff) : 0;
+        const diffBarWidthRem = diffScore > 0 ? Math.max(0.2, (diffRatio * 2.625)).toFixed(3) : 0;
+        const diffBarHtml = `
+          <div class="diff-bar-cell" title="Difference score: ${diffScore}">
+            <div class="diff-bar-fill" style="width: ${diffBarWidthRem}rem;"></div>
+          </div>
+        `;
+
+        row.innerHTML = `
+          ${hasChildren ? 
+            `<button class="tree-chevron-btn" data-hid="${escapeHtml(elem.hierarchy_id)}" aria-label="${isExpanded ? 'Collapse' : 'Expand'}" title="${isExpanded ? 'Collapse sub-processes' : 'Expand sub-processes'}"><svg class="icon"><use href="#icon-${isExpanded ? 'chevron-down' : 'chevron-right'}"/></svg></button>` : 
+            `<span class="tree-chevron-spacer"></span>`
+          }
+          <span class="tree-hid">${escapeHtml(elem.hierarchy_id)}</span>
+          <span class="tree-name">${titleHtml}</span>
+          <div class="row-markers-group">${markersHtml}</div>
+          ${diffBarHtml}
+        `;
+
+        const chevronBtn = row.querySelector(".tree-chevron-btn");
+        if (chevronBtn) {
+          chevronBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleNodeExpansion(elem.hierarchy_id);
+          });
+        }
+
+        row.addEventListener("click", () => {
+          document.querySelectorAll(".tree-row").forEach(r => {
+            r.classList.remove("selected");
+            r.setAttribute("aria-selected", "false");
+            r.setAttribute("tabindex", "-1");
+          });
+          row.classList.add("selected");
+          row.setAttribute("aria-selected", "true");
+          row.setAttribute("tabindex", "0");
+          inspectElement(elem);
+        });
+
+        wrapper.appendChild(row);
+
+        if (hasChildren) {
+          const childrenContainer = document.createElement("div");
+          childrenContainer.className = "tree-children";
+          childrenContainer.id = `tree-children-${elem.hierarchy_id.replace(/\./g, '_')}`;
+          childrenContainer.style.display = isExpanded ? "flex" : "none";
+          childrenContainer.style.flexDirection = "column";
+
+          children.forEach(child => {
+            const childNode = renderTreeNode(child);
+            if (childNode) childrenContainer.appendChild(childNode);
+          });
+
+          wrapper.appendChild(childrenContainer);
+        }
+
+        return wrapper;
+      }
+
+      rootElements.forEach(root => {
+        const rootNode = renderTreeNode(root);
+        if (rootNode) container.appendChild(rootNode);
+      });
+
+      // Target search by ID
+      if (exactMatch) {
+        setTimeout(() => {
+          const targetRow = document.querySelector(`.tree-row[data-id="${exactMatch.id}"]`) ||
+                            document.querySelector(`.tree-row[data-hid="${exactMatch.hierarchy_id}"]`);
+          if (targetRow) {
+            targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+            targetRow.classList.add("pulse-target");
+            setTimeout(() => targetRow.classList.remove("pulse-target"), 3200);
+          }
+        }, 120);
+      }
+    }
+
+    /* Accessible Keyboard Navigation in Tree (Arrow Keys, Home, End, Enter) */
+    function handleTreeKeyDown(e) {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+      if (activeTag === "input" || activeTag === "textarea") return;
+
+      const rows = Array.from(document.querySelectorAll(".tree-row:not([style*='display: none'])"));
+      if (rows.length === 0) return;
+
+      const currentIndex = rows.findIndex(r => r.classList.contains("selected") || r === document.activeElement);
+      const currentRow = currentIndex >= 0 ? rows[currentIndex] : rows[0];
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const nextIndex = Math.min(rows.length - 1, (currentIndex >= 0 ? currentIndex + 1 : 0));
+        activateTreeRow(rows[nextIndex]);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prevIndex = Math.max(0, (currentIndex >= 0 ? currentIndex - 1 : 0));
+        activateTreeRow(rows[prevIndex]);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (currentRow) {
+          const hid = currentRow.getAttribute("data-hid");
+          if (currentRow.hasAttribute("aria-expanded") && currentRow.getAttribute("aria-expanded") === "false") {
+            toggleNodeExpansion(hid);
+          } else {
+            // Move to first child
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < rows.length) activateTreeRow(rows[nextIndex]);
+          }
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (currentRow) {
+          const hid = currentRow.getAttribute("data-hid");
+          if (currentRow.hasAttribute("aria-expanded") && currentRow.getAttribute("aria-expanded") === "true") {
+            toggleNodeExpansion(hid);
+          } else {
+            // Move to parent row
+            const elem = state.data.elements.find(el => el.hierarchy_id === hid);
+            if (elem && elem.parent_hierarchy_id) {
+              const parentRow = rows.find(r => r.getAttribute("data-hid") === elem.parent_hierarchy_id);
+              if (parentRow) activateTreeRow(parentRow);
+            }
+          }
+        }
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        activateTreeRow(rows[0]);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        activateTreeRow(rows[rows.length - 1]);
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (currentRow) {
+          const id = currentRow.getAttribute("data-id");
+          const elem = state.data.elements.find(el => el.id === id);
+          if (elem) inspectElement(elem);
+        }
+      }
+    }
+
+    function activateTreeRow(row) {
+      if (!row) return;
+      document.querySelectorAll(".tree-row").forEach(r => {
+        r.classList.remove("selected");
+        r.setAttribute("aria-selected", "false");
+        r.setAttribute("tabindex", "-1");
+      });
+      row.classList.add("selected");
+      row.setAttribute("aria-selected", "true");
+      row.setAttribute("tabindex", "0");
+      row.focus();
+      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const id = row.getAttribute("data-id");
+      const elem = state.data.elements.find(el => el.id === id);
+      if (elem) inspectElement(elem, true);
+    }
+
+    /* Inspector (Right Pane) Reference-entry Layout */
+    function inspectElement(elem, shouldUpdateHash = true) {
+      state.selectedElement = elem;
+      const drawer = document.getElementById("inspector-drawer");
+      drawer.classList.remove("collapsed");
+      const workspace = document.querySelector(".workspace");
+      if (workspace) workspace.classList.remove("inspector-collapsed");
+
+      // Build ancestry breadcrumbs (Item 1: single-line, collapse middle)
+      const rawCrumbs = [];
+      const parts = elem.hierarchy_id.split(".");
+      if (elem.hierarchy_id.endsWith(".0")) {
+        const matched = state.data.elements.find(e => e.hierarchy_id === elem.hierarchy_id);
+        if (matched) rawCrumbs.push(matched);
+      } else {
+        const catHid = parts[0] + ".0";
+        const catElem = state.data.elements.find(e => e.hierarchy_id === catHid);
+        if (catElem) rawCrumbs.push(catElem);
+        for (let i = 2; i <= parts.length; i++) {
+          const curHid = parts.slice(0, i).join(".");
+          const matched = state.data.elements.find(e => e.hierarchy_id === curHid);
+          if (matched) rawCrumbs.push(matched);
+        }
+      }
+
+      const fullPath = rawCrumbs.map(c => `${c.hierarchy_id} ${c.name}`).join(" › ");
+      let breadcrumbInnerHtml = "";
+
+      if (rawCrumbs.length <= 3) {
+        breadcrumbInnerHtml = rawCrumbs.map((c, idx) => {
+          const isLast = idx === rawCrumbs.length - 1;
+          return isLast ? 
+            `<span>${escapeHtml(c.hierarchy_id)} ${escapeHtml(c.name)}</span>` : 
+            `<a class="breadcrumb-link" data-id="${escapeHtml(c.id)}">${escapeHtml(c.hierarchy_id)}</a>`;
+        }).join('<span class="sep">›</span>');
+      } else {
+        const first = rawCrumbs[0];
+        const secondToLast = rawCrumbs[rawCrumbs.length - 2];
+        const last = rawCrumbs[rawCrumbs.length - 1];
+        breadcrumbInnerHtml = `
+          <a class="breadcrumb-link" data-id="${escapeHtml(first.id)}">${escapeHtml(first.hierarchy_id)}</a>
+          <span class="sep">…</span>
+          <a class="breadcrumb-link" data-id="${escapeHtml(secondToLast.id)}">${escapeHtml(secondToLast.hierarchy_id)}</a>
+          <span class="sep">›</span>
+          <span>${escapeHtml(last.hierarchy_id)} ${escapeHtml(last.name)}</span>
+        `;
+      }
+
+      // Definition text (Item 1: Copy button on its own row inside definition box)
+      const hasDef = Boolean(elem.definition && elem.definition.trim().length > 0);
+      const defHtml = hasDef ? `
+        <div class="ref-definition-box">
+          <div class="ref-def-toolbar">
+            <button class="ref-copy-btn" data-copy="${escapeHtml(elem.definition)}" title="Copy definition">
+              <svg class="icon"><use href="#icon-copy"/></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="ref-definition-text">${escapeHtml(elem.definition)}</div>
+        </div>
+      ` : `
+        <div class="ref-definition-empty">APQC gives no definition for this element.</div>
+      `;
+
+      // Status subline text
+      let statusText = "Unchanged from previous version";
+      if (elem.is_new) statusText = "New element in v7.2.1";
+      else if (elem.is_renamed) statusText = `Renamed (was: ${elem.renamed_was || "renamed"})`;
+
+      // Key distinctive terms (Item 5: at most 5, data-term attribute)
+      const terms = (state.elemDistinctive && state.elemDistinctive.get(elem.id)) || [];
+      const termsHtml = terms.length > 0 ? `
+        <div>
+          <div style="font-size:0.74rem; color:var(--text-faint); margin-bottom:0.25rem;">Key distinctive terms</div>
+          <div class="ref-terms-strip">
+            ${terms.map(t => `<button class="ref-term-pill" data-term="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join("")}
+          </div>
+        </div>
+      ` : "";
+
+      // Children
+      const children = state.data.elements.filter(e => e.parent_hierarchy_id === elem.hierarchy_id);
+      const childrenHtml = `
+        <details class="ref-section" open>
+          <summary>
+            <span>Children (${children.length})</span>
+            <svg class="icon" style="width:11px; height:11px;"><use href="#icon-chevron-down"/></svg>
+          </summary>
+          <div class="ref-section-body">
+            ${children.length === 0 ? '<div style="color:var(--text-faint); font-style:italic;">No direct sub-processes.</div>' : 
+              children.map(c => {
+                const excerpt = c.definition ? (c.definition.length > 90 ? c.definition.slice(0, 90) + "…" : c.definition) : "";
+                return `
+                  <div class="ref-item-row" data-id="${escapeHtml(c.id)}">
+                    <div class="ref-item-header">
+                      <span class="ref-item-hid">${escapeHtml(c.hierarchy_id)}</span>
+                      <span class="ref-item-name">${escapeHtml(c.name)}</span>
+                      ${c.is_new ? '<span class="marker-badge marker-new" style="font-size:0.74rem;">New</span>' : ""}
+                      ${c.is_renamed ? '<span class="marker-badge marker-renamed" style="font-size:0.74rem;">Renamed</span>' : ""}
+                    </div>
+                    ${excerpt ? `<div class="ref-item-excerpt">${escapeHtml(excerpt)}</div>` : ""}
+                  </div>
+                `;
+              }).join("")}
+          </div>
+        </details>
+      `;
+
+      // Related by term (Item 1: top 5 with Show all toggle; Item 5: exclusions applied)
+      const related = getRelatedElements(elem, 10);
+      const top5Related = related.slice(0, 5);
+      const extraRelated = related.slice(5);
+
+      function renderRelatedRow(rel) {
+        return `
+          <div class="ref-item-row" data-id="${escapeHtml(rel.element.id)}">
+            <div class="ref-item-header">
+              <span class="ref-item-hid">${escapeHtml(rel.element.hierarchy_id)}</span>
+              <span class="ref-item-name">${escapeHtml(rel.element.name)}</span>
+              <span style="font-size:0.74rem; color:var(--text-faint); font-family:var(--font-mono);">${rel.score.toFixed(1)}</span>
+            </div>
+            <div class="related-shared-tags" style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:2px;">
+              ${rel.sharedTerms.map(t => `<span class="term-pill-tag" style="font-size:0.74rem; padding:0 4px; border:1px solid var(--border); border-radius:2px; color:var(--text-muted);">${escapeHtml(t)}</span>`).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      const relatedHtml = related.length > 0 ? `
+        <details class="ref-section" open>
+          <summary>
+            <span>Related by term (${related.length})</span>
+            <svg class="icon" style="width:11px; height:11px;"><use href="#icon-chevron-down"/></svg>
+          </summary>
+          <div class="ref-section-body">
+            ${top5Related.map(renderRelatedRow).join("")}
+            ${extraRelated.length > 0 ? `
+              <div class="related-extra-items is-hidden" id="related-extra-items" style="display:none; flex-direction:column; gap:0.4rem;">
+                ${extraRelated.map(renderRelatedRow).join("")}
+              </div>
+              <button type="button" class="ref-toggle-all-btn" id="toggle-related-all-btn">Show all ${related.length}</button>
+            ` : ""}
+          </div>
+        </details>
+      ` : "";
+
+      // Siblings
+      let siblingsHtml = "";
+      if (elem.parent_hierarchy_id) {
+        const siblings = state.data.elements.filter(e => e.parent_hierarchy_id === elem.parent_hierarchy_id && e.id !== elem.id);
+        siblingsHtml = `
+          <details class="ref-section">
+            <summary>
+              <span>Siblings (${siblings.length})</span>
+              <svg class="icon" style="width:11px; height:11px;"><use href="#icon-chevron-down"/></svg>
+            </summary>
+            <div class="ref-section-body">
+              ${siblings.length === 0 ? '<div style="color:var(--text-faint); font-style:italic;">No other sibling processes.</div>' : 
+                siblings.map(s => `
+                  <div class="ref-item-row" data-id="${escapeHtml(s.id)}">
+                    <div class="ref-item-header">
+                      <span class="ref-item-hid">${escapeHtml(s.hierarchy_id)}</span>
+                      <span class="ref-item-name">${escapeHtml(s.name)}</span>
+                    </div>
+                  </div>
+                `).join("")}
+            </div>
+          </details>
+        `;
+      }
+
+      // Change details
+      let changeHtml = "";
+      if (!state.isSingleVersion) {
+        changeHtml = `
+          <details class="ref-section">
+            <summary>
+              <span>Change details</span>
+              <svg class="icon" style="width:11px; height:11px;"><use href="#icon-chevron-down"/></svg>
+            </summary>
+            <div class="ref-section-body" style="font-size:0.75rem;">
+              <div>Status: <strong>${statusText}</strong></div>
+              <div>Difference score: <strong style="font-family:var(--font-mono);">${elem.diff_index}</strong></div>
+              ${elem.renamed_was ? `<div>Previous name: <em>${escapeHtml(elem.renamed_was)}</em></div>` : ""}
+              ${elem.added_children && elem.added_children.length > 0 ? `<div style="color:var(--status-new);">Added children: +${elem.added_children.join(", +")}</div>` : ""}
+              ${elem.removed_children && elem.removed_children.length > 0 ? `<div style="color:var(--status-removed);">Removed children: -${elem.removed_children.join(", -")}</div>` : ""}
+              ${elem.change_details ? `<div style="font-family:var(--font-mono); font-size:0.74rem; color:var(--text-faint); margin-top:0.25rem;">${escapeHtml(elem.change_details)}</div>` : ""}
+            </div>
+          </details>
+        `;
+      }
+
+      const content = document.getElementById("inspector-content");
+      content.innerHTML = `
+        <div class="ref-breadcrumb" title="${escapeHtml(fullPath)}" tabindex="0" aria-label="Breadcrumb: ${escapeHtml(fullPath)}">${breadcrumbInnerHtml}</div>
+        <h2 class="ref-title">${escapeHtml(elem.name)}</h2>
+        <div class="ref-subline">PCF ${escapeHtml(elem.pcf_id)} · ${escapeHtml(elem.level_name)} · ${statusText}</div>
+        ${defHtml}
+        ${termsHtml}
+        ${childrenHtml}
+        ${relatedHtml}
+        ${siblingsHtml}
+        ${changeHtml}
+      `;
+
+      if (shouldUpdateHash) {
+        updateHash();
+      }
+    }
+
+    window.jumpToElement = function(elementId) {
+      const byId = getElementByIdMap();
+      const elem = byId[elementId] || state.data.elements.find(e => e.id === elementId || e.pcf_id === elementId);
+      if (!elem) return;
+
+      if (state.activeView !== "explorer") {
+        switchView("explorer", false);
+      }
+
+      const byHid = getElementByHidMap();
+      let p = elem.parent_hierarchy_id;
+      while (p) {
+        state.expandedHids.add(p);
+        const parentElem = byHid[p];
+        p = parentElem ? parentElem.parent_hierarchy_id : null;
+      }
+
+      if (state.selectedCategoryId !== "all" && elem.category_id !== state.selectedCategoryId) {
+        state.selectedCategoryId = elem.category_id;
+        const explorerCatSelect = document.getElementById("explorer-cat-filter");
+        if (explorerCatSelect) explorerCatSelect.value = elem.category_id;
+        document.querySelectorAll(".category-nav-item").forEach(item => {
+          item.classList.toggle("active", item.getAttribute("data-cat-id") === elem.category_id);
+        });
+        renderCategoryHero();
+      }
+
+      renderExplorerNodes();
+      inspectElement(elem, true);
+
+      setTimeout(() => {
+        const row = document.querySelector(`.tree-row[data-id="${elem.id}"]`) ||
+                    document.querySelector(`.tree-row[data-hid="${elem.hierarchy_id}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+          document.querySelectorAll(".tree-row").forEach(c => {
+            c.classList.remove("selected");
+            c.setAttribute("aria-selected", "false");
+          });
+          row.classList.add("selected");
+          row.setAttribute("aria-selected", "true");
+          row.classList.add("pulse-target");
+          setTimeout(() => row.classList.remove("pulse-target"), 3200);
+        }
+      }, 120);
+    };
+
+    function populateCategoryFilters() {
+      const matrixSelect = document.getElementById("matrix-cat-filter");
+      const explorerSelect = document.getElementById("explorer-cat-filter");
+      const donutSelect = document.getElementById("donut-cat-filter");
+
+      if (donutSelect) {
+        donutSelect.innerHTML = '<option value="all">All categories (overall)</option>';
+      }
+
+      state.data.categories.forEach(c => {
+        const opt1 = document.createElement("option");
+        opt1.value = c.category_id;
+        opt1.textContent = `${c.hierarchy_id} ${c.name}`;
+        matrixSelect.appendChild(opt1);
+
+        if (explorerSelect) {
+          const opt2 = document.createElement("option");
+          opt2.value = c.category_id;
+          opt2.textContent = `${c.hierarchy_id} ${c.name}`;
+          explorerSelect.appendChild(opt2);
+        }
+
+        if (donutSelect) {
+          const opt3 = document.createElement("option");
+          opt3.value = c.category_id;
+          opt3.textContent = `${c.hierarchy_id} ${c.name} (${c.total_elements})`;
+          donutSelect.appendChild(opt3);
+        }
+      });
+      if (explorerSelect) explorerSelect.value = state.selectedCategoryId;
+      if (donutSelect) {
+        donutSelect.addEventListener("change", (e) => {
+          renderDonutChart(e.target.value);
+        });
+      }
+    }
+
+    /* Change Matrix Table View */
+    function renderMatrixTable() {
+      const tbody = document.getElementById("matrix-table-body");
+      tbody.innerHTML = "";
+
+      const catFilter = document.getElementById("matrix-cat-filter").value;
+      const typeFilter = document.getElementById("matrix-type-filter").value;
+
+      let rows = state.data.elements.filter(e => e.has_changes);
+
+      if (catFilter !== "all") {
+        rows = rows.filter(e => e.category_id === catFilter);
+      }
+      if (typeFilter === "new") {
+        rows = rows.filter(e => e.is_new);
+      } else if (typeFilter === "renamed") {
+        rows = rows.filter(e => e.is_renamed);
+      } else if (typeFilter === "children") {
+        rows = rows.filter(e => (e.added_children && e.added_children.length > 0) || (e.removed_children && e.removed_children.length > 0));
+      }
+
+      const col = state.matrixSort.col;
+      const dir = state.matrixSort.dir === "asc" ? 1 : -1;
+
+      rows.sort((a, b) => {
+        if (col === "diff") return ((a.diff_index || 0) - (b.diff_index || 0)) * dir;
+        if (col === "hid") return a.hierarchy_id.localeCompare(b.hierarchy_id, undefined, { numeric: true }) * dir;
+        if (col === "pid") return a.pcf_id.localeCompare(b.pcf_id, undefined, { numeric: true }) * dir;
+        if (col === "name") return a.name.localeCompare(b.name) * dir;
+        if (col === "cat") return (parseInt(a.category_id, 10) - parseInt(b.category_id, 10)) * dir;
+        if (col === "level") return (a.level - b.level) * dir;
+        if (col === "metrics") return ((a.metrics_available ? 1 : 0) - (b.metrics_available ? 1 : 0)) * dir;
+        return 0;
+      });
+
+      rows.forEach(item => {
+        const tr = document.createElement("tr");
+        if (state.selectedElement && state.selectedElement.id === item.id) {
+          tr.classList.add("selected");
+        }
+
+        let changeSummary = "";
+        if (item.is_new) changeSummary = '<span class="marker-badge marker-new">New</span>';
+        else if (item.is_renamed) changeSummary = `<span class="marker-badge marker-renamed">Renamed</span> <em>was: ${escapeHtml(item.renamed_was)}</em>`;
+        else if (item.added_children && item.added_children.length > 0) changeSummary = `Added: +${item.added_children.join(", +")}`;
+        else if (item.removed_children && item.removed_children.length > 0) changeSummary = `Removed: -${item.removed_children.join(", -")}`;
+
+        tr.innerHTML = `
+          <td class="td-mono">${escapeHtml(item.hierarchy_id)}</td>
+          <td class="td-mono">${escapeHtml(item.pcf_id)}</td>
+          <td style="font-weight:500;">${escapeHtml(item.name)}</td>
+          <td>${escapeHtml(item.category_id)}</td>
+          <td>${escapeHtml(item.level_name)}</td>
+          <td class="td-mono" style="text-align:right;">${item.diff_index}</td>
+          <td>${changeSummary}</td>
+          <td style="text-align:center;">${item.metrics_available ? '<span class="marker-metrics"><svg class="icon"><use href="#icon-metrics"/></svg></span>' : '–'}</td>
+        `;
+
+        tr.addEventListener("click", () => {
+          document.querySelectorAll("table.pcf-data-table tbody tr").forEach(r => r.classList.remove("selected"));
+          tr.classList.add("selected");
+          jumpToElement(item.id);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* Analytics View (Sorted Horizontal Bars & Direct Slice-Labeled Donut) */
+    function renderAnalyticsDashboard() {
+      // 1. Sorted Horizontal Bars by Difference Index
+      const barsContainer = document.getElementById("cat-diff-bars");
+      barsContainer.innerHTML = "";
+
+      const cats = [...state.data.categories].sort((a, b) => b.max_diff_index - a.max_diff_index);
+      const maxDiff = Math.max(1, ...cats.map(c => c.max_diff_index));
+
+      cats.forEach(c => {
+        const pct = Math.round((c.max_diff_index / maxDiff) * 100);
+        const item = document.createElement("div");
+        item.className = "cat-bar-item";
+        item.innerHTML = `
+          <span class="cat-bar-lbl" title="${escapeHtml(c.hierarchy_id)} ${escapeHtml(c.name)}">${escapeHtml(c.hierarchy_id)} ${escapeHtml(c.name)}</span>
+          <div class="cat-bar-track">
+            <div class="cat-bar-value" style="width: ${pct}%;"></div>
+          </div>
+          <span class="cat-bar-num">${c.max_diff_index}</span>
+        `;
+        barsContainer.appendChild(item);
+      });
+
+      // 2. Render Donut Chart
+      renderDonutChart(state.donutCategoryId);
+    }
+
+    function renderDonutChart(catId) {
+      state.donutCategoryId = catId;
+      const container = document.getElementById("donut-chart-container");
+      container.innerHTML = "";
+
+      let elements = state.data.elements;
+      if (catId !== "all") {
+        elements = elements.filter(e => e.category_id === catId);
+      }
+
+      const total = elements.length;
+      if (total === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No elements found.</div>';
+        return;
+      }
+
+      const newCount = elements.filter(e => e.is_new).length;
+      const renamedCount = elements.filter(e => e.is_renamed).length;
+      const unchangedCount = Math.max(0, total - (newCount + renamedCount));
+
+      const pctNew = ((newCount / total) * 100).toFixed(1);
+      const pctRenamed = ((renamedCount / total) * 100).toFixed(1);
+      const pctUnchanged = ((unchangedCount / total) * 100).toFixed(1);
+
+      // SVG Donut with direct segment labeling
+      const size = 260;
+      const center = size / 2;
+      const radius = 80;
+      const strokeWidth = 28;
+      const circumference = 2 * Math.PI * radius;
+
+      const newStroke = (newCount / total) * circumference;
+      const renamedStroke = (renamedCount / total) * circumference;
+      const unchangedStroke = (unchangedCount / total) * circumference;
+
+      const offsetNew = 0;
+      const offsetRenamed = -newStroke;
+      const offsetUnchanged = -(newStroke + renamedStroke);
+
+      container.innerHTML = `
+        <svg class="donut-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <g transform="rotate(-90 ${center} ${center})">
+            <!-- Unchanged Segment -->
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="var(--text-muted)" stroke-width="${strokeWidth}"
+              stroke-dasharray="${unchangedStroke} ${circumference}" stroke-dashoffset="${offsetUnchanged}"></circle>
+            <!-- Renamed Segment -->
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="var(--status-renamed)" stroke-width="${strokeWidth}"
+              stroke-dasharray="${renamedStroke} ${circumference}" stroke-dashoffset="${offsetRenamed}"></circle>
+            <!-- New Segment -->
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="var(--status-new-bar, var(--status-new))" stroke-width="${strokeWidth}"
+              stroke-dasharray="${newStroke} ${circumference}" stroke-dashoffset="${offsetNew}"></circle>
+          </g>
+          <!-- Center Text -->
+          <text x="${center}" y="${center - 6}" text-anchor="middle" font-size="19" font-weight="700" font-family="var(--font-mono)" fill="var(--text)">${total.toLocaleString()}</text>
+          <text x="${center}" y="${center + 14}" text-anchor="middle" font-size="11" fill="var(--text-muted)">elements</text>
+        </svg>
+        <div style="display:flex; flex-direction:column; gap:0.4rem; font-size:0.75rem; margin-left:1.5rem;">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span style="width:10px; height:10px; border-radius:2px; background:var(--status-new-bar, var(--status-new));"></span>
+            <span>New: <strong>${newCount.toLocaleString()}</strong> (${pctNew}%)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span style="width:10px; height:10px; border-radius:2px; background:var(--status-renamed);"></span>
+            <span>Renamed: <strong>${renamedCount.toLocaleString()}</strong> (${pctRenamed}%)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span style="width:10px; height:10px; border-radius:2px; background:var(--text-muted);"></span>
+            <span>Unchanged: <strong>${unchangedCount.toLocaleString()}</strong> (${pctUnchanged}%)</span>
+          </div>
+        </div>
+      `;
+    }
+
+    /* Glossary View (Readable Single-Column Width ~70ch) */
+    function renderGlossaryView(query = null, append = false, prevLimit = 0) {
+      if (query !== null) {
+        state.glossaryFilterQuery = query.toLowerCase();
+        state.glossaryRenderLimit = 80;
+      }
+      const q = state.glossaryFilterQuery || "";
+
+      let items = state.data.elements.filter(e => e.definition && e.definition.trim().length > 0);
+
+      if (q) {
+        items = items.filter(e => 
+          (e.name && e.name.toLowerCase().includes(q)) || 
+          (e.definition && e.definition.toLowerCase().includes(q)) ||
+          (e.hierarchy_id && e.hierarchy_id.toLowerCase().includes(q)) ||
+          (e.pcf_id && e.pcf_id.toLowerCase().includes(q))
+        );
+      }
+
+      const totalMatching = items.length;
+      const subtitle = document.getElementById("glossary-subtitle");
+      if (subtitle) {
+        subtitle.textContent = q ? 
+          `${totalMatching.toLocaleString()} matching definitions` : 
+          `${totalMatching.toLocaleString()} defined standard terms`;
+      }
+
+      const container = document.getElementById("glossary-cards-container");
+      if (!container) return;
+
+      if (!append) {
+        container.innerHTML = "";
+        container.scrollTop = 0;
+      }
+
+      const itemsToRender = append ? 
+        items.slice(prevLimit, state.glossaryRenderLimit) : 
+        items.slice(0, state.glossaryRenderLimit);
+
+      if (!append && itemsToRender.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-muted); max-width:760px; margin:0 auto;">No definitions matching query.</div>';
+      } else {
+        const cardsHtml = itemsToRender.map(item => {
+          let nameHtml = escapeHtml(item.name);
+          let defHtml = escapeHtml(item.definition);
+          if (q) {
+            try {
+              const reg = new RegExp(`(${escapeRegExp(q)})`, "gi");
+              nameHtml = nameHtml.replace(reg, "<mark>$1</mark>");
+              defHtml = defHtml.replace(reg, "<mark>$1</mark>");
+            } catch (e) {}
+          }
+          return `
+            <div class="glossary-card">
+              <div class="glossary-top">
+                <span class="glossary-name" data-id="${escapeHtml(item.id)}">${nameHtml}</span>
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-faint);">${escapeHtml(item.hierarchy_id)} · PCF ${escapeHtml(item.pcf_id)}</span>
+              </div>
+              <div class="glossary-text">${defHtml}</div>
+            </div>
+          `;
+        }).join("");
+
+        if (append) {
+          container.insertAdjacentHTML("beforeend", cardsHtml);
+        } else {
+          container.innerHTML = cardsHtml;
+        }
+      }
+
+      const pagBar = document.getElementById("glossary-pagination-bar");
+      if (pagBar) {
+        pagBar.innerHTML = "";
+        const currentlyVisible = Math.min(state.glossaryRenderLimit, totalMatching);
+        if (currentlyVisible < totalMatching) {
+          pagBar.style.display = "flex";
+          const nextCount = Math.min(80, totalMatching - currentlyVisible);
+          const moreBtn = document.createElement("button");
+          moreBtn.className = "action-btn";
+          moreBtn.textContent = `Show more (+${nextCount})`;
+          moreBtn.addEventListener("click", () => {
+            const oldLimit = state.glossaryRenderLimit;
+            state.glossaryRenderLimit += 80;
+            renderGlossaryView(null, true, oldLimit);
+          });
+          pagBar.appendChild(moreBtn);
+
+          const allBtn = document.createElement("button");
+          allBtn.className = "action-btn";
+          allBtn.textContent = `Show all (${totalMatching.toLocaleString()})`;
+          allBtn.addEventListener("click", () => {
+            const oldLimit = state.glossaryRenderLimit;
+            state.glossaryRenderLimit = totalMatching;
+            const t0 = performance.now();
+            renderGlossaryView(null, true, oldLimit);
+            const t1 = performance.now();
+            state._glossaryRenderAllTimeMs = +(t1 - t0).toFixed(2);
+          });
+          pagBar.appendChild(allBtn);
+        } else {
+          pagBar.style.display = "none";
+        }
+      }
+    }
+
+    /* URL Hash Routing */
+    function updateHash() {
+      if (state._isHandlingHash) return;
+      let newHash = `#${state.activeView}`;
+      if (state.activeView === "explorer") {
+        const catId = (state.selectedElement && state.selectedElement.category_id) ? state.selectedElement.category_id : state.selectedCategoryId;
+        if (catId) newHash += `/cat-${catId}`;
+        if (state.selectedElement) {
+          const pcfOrId = state.selectedElement.pcf_id || state.selectedElement.id;
+          if (pcfOrId) newHash += `/pcf-${pcfOrId}`;
+        }
+      }
+      if (window.location.hash !== newHash) {
+        state._isHandlingHash = true;
+        window.location.hash = newHash;
+        setTimeout(() => { state._isHandlingHash = false; }, 10);
+      }
+    }
+
+    function applyHash() {
+      if (state._isHandlingHash || !state.data) return;
+      state._isHandlingHash = true;
+      try {
+        const rawHash = window.location.hash.replace(/^#\/?/, "");
+        if (!rawHash) {
+          state._isHandlingHash = false;
+          return;
+        }
+        const parts = rawHash.split("/");
+        const view = parts[0] || "explorer";
+        if (["explorer", "matrix", "analytics", "glossary"].includes(view)) {
+          switchView(view, false);
+        }
+
+        if (view === "explorer") {
+          let targetCat = null;
+          let targetPcf = null;
+          for (let i = 1; i < parts.length; i++) {
+            const seg = parts[i];
+            if (seg.startsWith("cat-")) targetCat = seg.replace("cat-", "");
+            else if (seg.startsWith("pcf-")) targetPcf = seg.replace("pcf-", "");
+          }
+
+          if (targetCat && targetCat !== state.selectedCategoryId) {
+            selectCategory(targetCat, false);
+          }
+
+          if (targetPcf) {
+            const elem = state.data.elements.find(e => e.pcf_id === targetPcf || e.id === targetPcf);
+            if (elem) {
+              if (elem.category_id !== state.selectedCategoryId && !targetCat) {
+                selectCategory(elem.category_id, false);
+              }
+              const byHid = getElementByHidMap();
+              let p = elem.parent_hierarchy_id;
+              while (p) {
+                state.expandedHids.add(p);
+                const parentElem = byHid[p];
+                p = parentElem ? parentElem.parent_hierarchy_id : null;
+              }
+              renderExplorerNodes();
+              inspectElement(elem, false);
+              setTimeout(() => {
+                const row = document.querySelector(`.tree-row[data-id="${elem.id}"]`) ||
+                            document.querySelector(`.tree-row[data-hid="${elem.hierarchy_id}"]`);
+                if (row) {
+                  row.scrollIntoView({ behavior: "smooth", block: "center" });
+                  document.querySelectorAll(".tree-row").forEach(c => c.classList.remove("selected"));
+                  row.classList.add("selected");
+                }
+              }, 150);
+            }
+          }
+        }
+      } finally {
+        setTimeout(() => { state._isHandlingHash = false; }, 20);
+      }
+    }
+
+    /* Clipboard Copy & Toast */
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("Copied");
+        }).catch(() => fallbackCopyText(text));
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast("Copied");
+      } catch (err) {
+        showToast("Unable to copy", true);
+      }
+      document.body.removeChild(ta);
+    }
+
+    let toastTimeout = null;
+    function showToast(message, isError = false) {
+      let toast = document.getElementById("pcf-toast");
+      if (!toast) return;
+      toast.textContent = message;
+      toast.style.borderColor = isError ? "var(--status-removed)" : "var(--border-strong)";
+      toast.classList.add("show");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2000);
+    }
+
+    document.addEventListener("click", (e) => {
+      // 1. Copy definition
+      const copyBtn = e.target.closest("[data-copy]");
+      if (copyBtn) {
+        e.stopPropagation();
+        const textToCopy = copyBtn.getAttribute("data-copy");
+        if (textToCopy) copyToClipboard(textToCopy);
+        return;
+      }
+
+      // 2. Jump to element by data-id (breadcrumbs, related rows, siblings, children, glossary)
+      const jumpTarget = e.target.closest("[data-id]");
+      if (jumpTarget) {
+        // Outline rows handle their own click; handle inspector/glossary links here
+        if (!jumpTarget.classList.contains("tree-row") || jumpTarget.classList.contains("ref-item-row") || jumpTarget.classList.contains("breadcrumb-link") || jumpTarget.classList.contains("glossary-name")) {
+          const id = jumpTarget.getAttribute("data-id");
+          if (id) {
+            e.stopPropagation();
+            jumpToElement(id);
+            return;
+          }
+        }
+      }
+
+      // 3. Search key distinctive term
+      const termBtn = e.target.closest("[data-term]");
+      if (termBtn) {
+        const term = termBtn.getAttribute("data-term");
+        if (term) {
+          e.stopPropagation();
+          searchForTerm(term);
+          return;
+        }
+      }
+
+      // 4. Toggle related by term (show all / show top 5)
+      const toggleRelated = e.target.closest("#toggle-related-all-btn");
+      if (toggleRelated) {
+        e.stopPropagation();
+        const extraContainer = document.getElementById("related-extra-items");
+        if (extraContainer) {
+          const isHidden = extraContainer.classList.contains("is-hidden") || extraContainer.style.display === "none";
+          if (isHidden) {
+            extraContainer.classList.remove("is-hidden");
+            extraContainer.style.display = "flex";
+            toggleRelated.textContent = "Show top 5";
+          } else {
+            extraContainer.classList.add("is-hidden");
+            extraContainer.style.display = "none";
+            toggleRelated.textContent = `Show all ${extraContainer.children.length + 5}`;
+          }
+        }
+        return;
+      }
+    });
+
+    /* In-Browser Excel Workbook Parser (SheetJS) */
+    let pendingWorkbookBuffer = null;
+    let pendingFileName = "";
+
+    function handleFileSelection(file) {
+      if (!file) return;
+      if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+        showToast("Please choose an Excel workbook (.xlsx)", true);
+        return;
+      }
+
+      pendingFileName = file.name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          pendingWorkbookBuffer = new Uint8Array(e.target.result);
+          openUploadModal(pendingWorkbookBuffer, pendingFileName);
+        } catch (err) {
+          console.warn("File read error:", err.message);
+          showToast(`Cannot read file: ${err.message}`, true);
+        }
+      };
+      reader.onerror = function() {
+        showToast("Failed to read file from disk", true);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function openUploadModal(buf, fileName) {
+      pendingWorkbookBuffer = buf;
+      pendingFileName = fileName;
+      try {
+        if (typeof XLSX === "undefined") {
+          throw new Error("SheetJS library (vendor/xlsx.full.min.js) is not loaded.");
+        }
+        const previewData = parsePCFWorkbook(buf, { fileName });
+        const modal = document.getElementById("upload-modal-container");
+        const nameInput = document.getElementById("modal-framework-name");
+        const verInput = document.getElementById("modal-framework-version");
+        const catsGrid = document.getElementById("modal-op-cats-container");
+        const summaryEl = document.getElementById("modal-detected-summary");
+        const errBox = document.getElementById("upload-dialog-error");
+        const confirmBtn = document.getElementById("confirm-upload-btn");
+        const formFields = document.getElementById("upload-modal-fields");
+
+        if (errBox) errBox.style.display = "none";
+        if (confirmBtn) confirmBtn.disabled = false;
+        if (formFields) formFields.style.display = "block";
+
+        let guessedTitle = "APQC Process Classification Framework";
+        if (/retail/i.test(fileName)) guessedTitle = "APQC Retail PCF";
+        else if (/health/i.test(fileName)) guessedTitle = "APQC Healthcare Provider PCF";
+        else if (previewData.categories.length > 0) guessedTitle = `APQC ${previewData.categories[0].name.split(" ")[0]} PCF`;
+
+        nameInput.value = guessedTitle;
+        verInput.value = "v7.2.1";
+
+        const isRetail = /retail/i.test(fileName) || /retail/i.test(guessedTitle);
+        const defaultOp = isRetail ? new Set(["1", "2", "3", "4", "5", "6"]) : new Set(["1", "2", "3", "4", "5"]);
+
+        catsGrid.innerHTML = "";
+        previewData.categories.forEach(c => {
+          const isChecked = defaultOp.has(c.category_id);
+          const label = document.createElement("label");
+          label.className = "op-cat-checkbox-item";
+          label.innerHTML = `
+            <input type="checkbox" value="${c.category_id}" ${isChecked ? "checked" : ""}>
+            <span style="font-weight:600; font-family:var(--font-mono);">${escapeHtml(c.hierarchy_id)}</span>
+            <span style="color:var(--text-muted);">${escapeHtml(c.name)}</span>
+          `;
+          catsGrid.appendChild(label);
+        });
+
+        summaryEl.textContent = `Detected: ${previewData.elements.length.toLocaleString()} elements across ${previewData.categories.length} categories (${previewData.metadata.total_new.toLocaleString()} new, ${previewData.metadata.total_renamed.toLocaleString()} renamed, ${previewData.metadata.definitions_count.toLocaleString()} definitions).`;
+
+        modal.style.display = "flex";
+      } catch (err) {
+        console.warn("Initial parse error:", err.message);
+        showUploadModalError(err.message, fileName);
+      }
+    }
+
+    function showUploadModalError(message, fileName = "") {
+      const modal = document.getElementById("upload-modal-container");
+      const errBox = document.getElementById("upload-dialog-error");
+      const confirmBtn = document.getElementById("confirm-upload-btn");
+      const formFields = document.getElementById("upload-modal-fields");
+
+      let cleanMsg = message;
+      if (cleanMsg.includes("SheetJS library")) {
+        cleanMsg = "SheetJS library (vendor/xlsx.full.min.js) wasn't loaded. Ensure the file is present in vendor/.";
+      } else if (!cleanMsg.includes("Use a 'vX vs vY' workbook") && (cleanMsg.includes("corrupt") || cleanMsg.includes("Unsupported") || cleanMsg.includes("read") || cleanMsg.includes("header") || cleanMsg.includes("ZIP") || cleanMsg.includes("Cannot"))) {
+        cleanMsg = "Cannot read workbook structure. Use an APQC Excel workbook (.xlsx) from apqc.org/pcf.";
+      }
+      if (errBox) {
+        errBox.textContent = cleanMsg;
+        errBox.style.display = "block";
+      }
+      if (formFields) formFields.style.display = "none";
+      if (confirmBtn) confirmBtn.disabled = true;
+      if (modal) modal.style.display = "flex";
+    }
+
+    window.showUploadModalError = showUploadModalError;
+
+    function closeUploadModal() {
+      const modal = document.getElementById("upload-modal-container");
+      if (modal) modal.style.display = "none";
+      pendingWorkbookBuffer = null;
+      pendingFileName = "";
+    }
+
+    function decodeChanges(changeStr) {
+      if (!changeStr || typeof changeStr !== "string" || !changeStr.trim()) {
+        return {
+          has_changes: false,
+          raw_changes: "",
+          is_new: false,
+          is_renamed: false,
+          renamed_was: "",
+          added_children: [],
+          removed_children: [],
+          changed_children: []
+        };
+      }
+
+      const raw = changeStr.trim();
+      let is_renamed = false;
+      let renamed_was = "";
+      let is_new = false;
+      let prefix_part = raw;
+
+      if (raw.includes("WAS:")) {
+        is_renamed = true;
+        const parts = raw.split("WAS:");
+        prefix_part = parts[0];
+        let was_content = parts.slice(1).join("WAS:").trim();
+
+        if (was_content.endsWith(", NEW")) {
+          was_content = was_content.slice(0, -5).trim();
+          is_new = true;
+        } else if (was_content.endsWith(",NEW")) {
+          was_content = was_content.slice(0, -4).trim();
+          is_new = true;
+        } else {
+          is_new = /\bNEW\b/.test(prefix_part);
+        }
+        renamed_was = was_content;
+      } else {
+        if (raw.includes("RENAME")) {
+          is_renamed = true;
+        }
+        is_new = /\bNEW\b/.test(raw);
+      }
+
+      const added = [];
+      const addRe = /\+(\d+)/g;
+      let m;
+      while ((m = addRe.exec(prefix_part)) !== null) added.push(m[1]);
+
+      const removed = [];
+      const remRe = /\-(\d+)/g;
+      while ((m = remRe.exec(prefix_part)) !== null) removed.push(m[1]);
+
+      const changed = [];
+      const chgRe = /\bc(\d+)/g;
+      while ((m = chgRe.exec(prefix_part)) !== null) changed.push(m[1]);
+
+      return {
+        has_changes: true,
+        raw_changes: raw,
+        is_new,
+        is_renamed,
+        renamed_was,
+        added_children: added,
+        removed_children: removed,
+        changed_children: changed
+      };
+    }
+
+    function parsePCFWorkbook(workbookData, options = {}) {
+      if (typeof XLSX === "undefined") {
+        throw new Error("SheetJS library (vendor/xlsx.full.min.js) is required to parse Excel files.");
+      }
+
+      const wb = (typeof workbookData === "object" && workbookData.Sheets) ? 
+        workbookData : 
+        XLSX.read(workbookData, { type: "array" });
+
+      const findSheet = (pattern) => {
+        if (wb.Sheets[pattern]) return wb.Sheets[pattern];
+        const key = Object.keys(wb.Sheets).find(k => k.toLowerCase().includes(pattern.toLowerCase()));
+        return key ? wb.Sheets[key] : null;
+      };
+
+      const combSheet = findSheet("Combined");
+      if (!combSheet) throw new Error("Sheet 'Combined' wasn't found. Use a 'vX vs vY' workbook from apqc.org/pcf.");
+
+      const glossSheet = findSheet("Glossary");
+      if (!glossSheet) throw new Error("Sheet 'Glossary terms' wasn't found. Use a 'vX vs vY' workbook from apqc.org/pcf.");
+
+      const combinedRows = XLSX.utils.sheet_to_json(combSheet, { defval: "" });
+      const glossaryRows = XLSX.utils.sheet_to_json(glossSheet, { defval: "" });
+
+      if (combinedRows.length === 0) throw new Error("Worksheet 'Combined' has no rows");
+
+      const glossByPid = new Map();
+      const glossByHid = new Map();
+
+      glossaryRows.forEach(row => {
+        const pid = String(row["Process Element ID"] || row["PCF ID"] || "").trim();
+        const hid = String(row["Hierarchy ID"] || "").trim();
+        const defn = String(row["Definition"] || "").trim();
+        if (pid) glossByPid.set(pid, defn);
+        if (hid) glossByHid.set(hid, defn);
+      });
+
+      const operatingCats = options.operatingCategories || new Set(["1", "2", "3", "4", "5"]);
+      const elements = [];
+      const categoryMap = new Map();
+
+      const level_names = {
+        1: "Category",
+        2: "Process group",
+        3: "Process",
+        4: "Activity",
+        5: "Task"
+      };
+
+      combinedRows.forEach(row => {
+        const pcf_id = String(row["PCF ID"] || row["Process Element ID"] || "").trim();
+        const hierarchy_id = String(row["Hierarchy ID"] || "").trim();
+        const name = String(row["Name"] || "").trim();
+        const diff_index = parseInt(row["Difference Index"] || 0, 10) || 0;
+        const metrics_available = String(row["Metrics available?"] || "").trim().toUpperCase() === "Y";
+        const change_details = String(row["Change details"] || "");
+
+        if (!hierarchy_id) return;
+
+        const parts = hierarchy_id.split(".");
+        let level = parts.length;
+        const category_num = parts[0];
+
+        const is_category_root = (level === 2 && parts[1] === "0");
+        let level_name = "";
+        let parent_hid = "";
+
+        if (is_category_root) {
+          level = 1;
+          level_name = "Category";
+          parent_hid = "";
+        } else {
+          level_name = level_names[level] || `Level ${level}`;
+          parent_hid = parts.length > 1 ? parts.slice(0, -1).join(".") : "";
+          if (parts.length === 2 && parts[1] !== "0") {
+            parent_hid = `${parts[0]}.0`;
+          }
+        }
+
+        const defn = glossByPid.get(pcf_id) || glossByHid.get(hierarchy_id) || "";
+        const changeInfo = decodeChanges(change_details);
+        const process_type = operatingCats.has(category_num) ? "Operating Processes" : "Management & Support Services";
+
+        const elem = {
+          id: pcf_id || hierarchy_id,
+          pcf_id,
+          hierarchy_id,
+          name,
+          level,
+          level_name,
+          category_id: category_num,
+          parent_hierarchy_id: parent_hid,
+          diff_index,
+          metrics_available,
+          process_type,
+          definition: defn,
+          change_details: changeInfo.raw_changes,
+          has_changes: changeInfo.has_changes,
+          is_new: changeInfo.is_new,
+          is_renamed: changeInfo.is_renamed,
+          renamed_was: changeInfo.renamed_was,
+          added_children: changeInfo.added_children,
+          removed_children: changeInfo.removed_children,
+          changed_children: changeInfo.changed_children
+        };
+
+        elements.push(elem);
+
+        if (is_category_root) {
+          categoryMap.set(category_num, {
+            category_id: category_num,
+            hierarchy_id,
+            pcf_id,
+            name,
+            process_type,
+            diff_index,
+            metrics_available,
+            change_details: changeInfo.raw_changes
+          });
+        }
+      });
+
+      const categories = [];
+      const sortedCatNums = Array.from(categoryMap.keys()).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+      sortedCatNums.forEach(catNum => {
+        const catInfo = categoryMap.get(catNum);
+        const catElements = elements.filter(e => e.category_id === catNum);
+        const total_elements = catElements.length;
+        const new_elements = catElements.filter(e => e.is_new).length;
+        const renamed_elements = catElements.filter(e => e.is_renamed).length;
+        const elements_with_changes = catElements.filter(e => e.has_changes).length;
+        const metrics_count = catElements.filter(e => e.metrics_available).length;
+        const max_diff_index = catElements.reduce((max, e) => Math.max(max, e.diff_index), 0);
+        const sum_diff_index = catElements.reduce((sum, e) => sum + e.diff_index, 0);
+
+        categories.push({
+          category_id: catNum,
+          hierarchy_id: catInfo.hierarchy_id,
+          pcf_id: catInfo.pcf_id,
+          name: catInfo.name,
+          process_type: catInfo.process_type,
+          total_elements,
+          elements_with_changes,
+          new_elements,
+          renamed_elements,
+          metrics_available: metrics_count,
+          max_diff_index,
+          sum_diff_index
+        });
+      });
+
+      const newCount = elements.filter(e => e.is_new).length;
+      const renamedCount = elements.filter(e => e.is_renamed).length;
+      const metricsCount = elements.filter(e => e.metrics_available).length;
+      const changesCount = elements.filter(e => e.has_changes).length;
+      const defCount = elements.filter(e => e.definition && e.definition.trim().length > 0).length;
+
+      return {
+        metadata: {
+          source_document: options.fileName || "Uploaded PCF Workbook",
+          framework: options.frameworkName || "Process Classification Framework (PCF)",
+          version: options.version || "v7.2.1",
+          attribution: options.attribution || "©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® (\"PCF\") is the copyrighted intellectual property of APQC.",
+          total_elements: elements.length,
+          total_with_changes: changesCount,
+          total_new: newCount,
+          total_renamed: renamedCount,
+          total_with_metrics: metricsCount,
+          categories_count: categories.length,
+          definitions_count: defCount
+        },
+        categories,
+        elements
+      };
+    }
+
+    function exportCurrentViewToCSV() {
+      let elements = state.data.elements.filter(e => e.category_id === state.selectedCategoryId);
+      if (state.activeView === "matrix") {
+        elements = state.data.elements.filter(e => e.has_changes);
+      } else if (state.selectedCategoryId === "all") {
+        elements = state.data.elements;
+      }
+
+      const attr = (state.data && state.data.metadata && state.data.metadata.attribution) ? 
+        state.data.metadata.attribution : 
+        '©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.';
+
+      const headers = ["Hierarchy ID", "PCF ID", "Name", "Level", "Category", "Diff Index", "Is New", "Is Renamed", "Renamed Was", "Metrics Available", "Definition"];
+      const rows = elements.map(e => [
+        `"${e.hierarchy_id}"`,
+        `"${e.pcf_id}"`,
+        `"${escapeCSV(e.name)}"`,
+        `"${e.level_name}"`,
+        `"${e.category_id}"`,
+        e.diff_index,
+        e.is_new ? "YES" : "NO",
+        e.is_renamed ? "YES" : "NO",
+        `"${escapeCSV(e.renamed_was || "")}"`,
+        e.metrics_available ? "YES" : "NO",
+        `"${escapeCSV(e.definition || "")}"`
+      ]);
+
+      const frameworkSlug = (state.data?.metadata?.framework || "pcf").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      const csvContent = `# ${attr}\n` + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${frameworkSlug}_${state.activeView}_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeCSV(str) {
+      return (str || "").replace(/"/g, '""');
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+  </script>
+</body>
+</html>

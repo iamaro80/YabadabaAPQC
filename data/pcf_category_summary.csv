@@ -1,0 +1,15 @@
+# ©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® ("PCF") is the copyrighted intellectual property of APQC.
+category_id,hierarchy_id,pcf_id,name,process_type,total_elements,elements_with_changes,new_elements,renamed_elements,metrics_available,max_diff_index,sum_diff_index
+1,1.0,10002,Develop Vision and Strategy,Operating Processes,142,90,66,12,1,80,319
+2,2.0,10003,Develop and Manage Health Care Services,Operating Processes,108,79,70,3,11,76,316
+3,3.0,10004,Market Health Care Services,Operating Processes,205,160,139,8,34,149,594
+4,4.0,18796,Deliver Health Care Services,Operating Processes,212,92,43,42,19,90,346
+5,5.0,20025,Deliver Services,Operating Processes,67,67,67,0,6,67,253
+6,6.0,20085,Manage Customer Service,Management & Support Services,109,92,76,15,14,98,367
+7,7.0,10007,Develop and Manage Human Capital,Management & Support Services,142,58,26,18,31,51,185
+8,8.0,20607,Manage Information Technology (IT),Management & Support Services,321,321,321,0,8,321,1241
+9,9.0,17058,Manage Financial Resources,Management & Support Services,277,97,68,9,85,80,310
+10,10.0,19207,"Acquire, Construct, and Manage Assets",Management & Support Services,70,56,46,10,3,58,207
+11,11.0,16437,"Manage Enterprise Risk, Compliance, Remediation, and Resiliency",Management & Support Services,59,10,3,4,3,7,29
+12,12.0,10012,Manage External Relationships,Management & Support Services,61,20,13,2,2,15,59
+13,13.0,10013,Develop and Manage Business Capabilities,Management & Support Services,212,45,22,11,4,34,125
