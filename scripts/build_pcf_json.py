@@ -33,6 +33,7 @@ def decode_changes(change_str):
     raw = str(change_str).strip()
     is_renamed = False
     renamed_was = ""
+    is_new = False
     prefix_part = raw
     
     if "WAS:" in raw:
@@ -41,27 +42,38 @@ def decode_changes(change_str):
         prefix_part = parts[0]
         was_content = parts[1].strip()
         
-        # Handle trailing ', NEW'
-        if was_content.endswith(", NEW"):
-            was_content = was_content[:-5].strip()
-            is_new = True
-        elif was_content.endswith(",NEW"):
-            was_content = was_content[:-4].strip()
+        # Robust trailing NEW detection: case-insensitive, any whitespace around comma, optional trailing period
+        m_new = re.search(r',\s*new\s*\.?\s*$', was_content, flags=re.IGNORECASE)
+        if m_new:
+            was_content = was_content[:m_new.start()].strip()
             is_new = True
         else:
-            is_new = bool(re.search(r'\bNEW\b', prefix_part))
+            is_new = bool(re.search(r'\bNEW\b', prefix_part, flags=re.IGNORECASE))
             
         renamed_was = was_content
     else:
-        if "RENAME" in raw:
+        if bool(re.search(r'\bRENAME\b', raw, flags=re.IGNORECASE)):
             is_renamed = True
-        is_new = bool(re.search(r'\bNEW\b', raw))
+        is_new = bool(re.search(r'\bNEW\b', raw, flags=re.IGNORECASE))
     
-    # Parse child tokens (+, -, c) ONLY from the non-WAS prefix portion
-    added = re.findall(r'\+(\d+)', prefix_part)
-    removed = re.findall(r'\-(\d+)', prefix_part)
-    changed = re.findall(r'\bc(\d+)', prefix_part)
-    
+    # Parse child tokens (+, -, c) as whole tokens only from prefix_part.
+    # Split the prefix on commas and match each token with ^[+\-c]\d+$
+    added = []
+    removed = []
+    changed = []
+    for raw_token in prefix_part.split(","):
+        token = raw_token.strip()
+        m = re.match(r'^([+\-c])(\d+)$', token)
+        if m:
+            prefix_char = m.group(1)
+            child_id = m.group(2)
+            if prefix_char == '+':
+                added.append(child_id)
+            elif prefix_char == '-':
+                removed.append(child_id)
+            elif prefix_char == 'c':
+                changed.append(child_id)
+                
     return {
         "has_changes": True,
         "raw_changes": raw,
@@ -73,81 +85,89 @@ def decode_changes(change_str):
         "changed_children": changed
     }
 
-def main():
-    if not os.path.exists(EXCEL_FILE):
-        raise FileNotFoundError(f"Source file not found: {EXCEL_FILE}")
-        
-    os.makedirs(DATA_DIR, exist_ok=True)
-    
-    print(f"Loading {EXCEL_FILE}...")
-    df_comb = pd.read_excel(EXCEL_FILE, sheet_name="Combined")
-    df_gloss = pd.read_excel(EXCEL_FILE, sheet_name="Glossary terms")
-    
-    print(f"Combined sheet rows: {len(df_comb)}")
-    print(f"Glossary sheet rows: {len(df_gloss)}")
-    
+def parse_pcf_workbook(excel_file, operating_categories=None):
+    """
+    Parses any APQC PCF workbook (.xlsx), extracting normalized elements,
+    hierarchies, definitions, and change details.
+    """
+    if not os.path.exists(excel_file):
+        raise FileNotFoundError(f"Source file not found: {excel_file}")
+
+    xl = pd.ExcelFile(excel_file)
+    comb_sheet = next((s for s in xl.sheet_names if "combined" in s.lower()), None)
+    gloss_sheet = next((s for s in xl.sheet_names if "glossary" in s.lower()), None)
+
+    if not comb_sheet:
+        raise ValueError("Missing required worksheet: 'Combined'")
+    if not gloss_sheet:
+        raise ValueError("Missing required worksheet: 'Glossary terms'")
+
+    df_comb = pd.read_excel(excel_file, sheet_name=comb_sheet)
+    df_gloss = pd.read_excel(excel_file, sheet_name=gloss_sheet)
+
     # Build glossary lookup dictionaries
     gloss_by_pid = {}
     gloss_by_hid = {}
     for _, row in df_gloss.iterrows():
-        defn = str(row["Definition"]).strip() if pd.notna(row["Definition"]) else ""
-        if pd.notna(row["Process Element ID"]):
-            gloss_by_pid[str(row["Process Element ID"]).strip()] = defn
-        if pd.notna(row["Hierarchy ID"]):
+        defn = str(row["Definition"]).strip() if pd.notna(row.get("Definition")) else ""
+        pid_val = row.get("Process Element ID") if pd.notna(row.get("Process Element ID")) else row.get("PCF ID")
+        if pd.notna(pid_val):
+            gloss_by_pid[str(pid_val).strip()] = defn
+        if pd.notna(row.get("Hierarchy ID")):
             gloss_by_hid[str(row["Hierarchy ID"]).strip()] = defn
 
-    # Parse and enrich elements
+    if operating_categories is not None:
+        op_cats = {str(c) for c in operating_categories}
+    else:
+        op_cats = {"1", "2", "3", "4", "5"}
+
     elements = []
     category_map = {}
-    
+
+    level_names = {
+        1: "Category",
+        2: "Process group",
+        3: "Process",
+        4: "Activity",
+        5: "Task"
+    }
+
     for idx, row in df_comb.iterrows():
-        pcf_id = str(row["PCF ID"]).strip() if pd.notna(row["PCF ID"]) else ""
-        hierarchy_id = str(row["Hierarchy ID"]).strip() if pd.notna(row["Hierarchy ID"]) else ""
-        name = str(row["Name"]).strip() if pd.notna(row["Name"]) else ""
-        diff_index = int(row["Difference Index"]) if pd.notna(row["Difference Index"]) else 0
-        metrics_available = str(row["Metrics available?"]).strip().upper() == "Y"
-        raw_change = row["Change details"]
-        
-        # Determine hierarchy level
+        pcf_val = row.get("PCF ID") if pd.notna(row.get("PCF ID")) else row.get("Process Element ID")
+        pcf_id = str(pcf_val).strip() if pd.notna(pcf_val) else ""
+        hierarchy_id = str(row.get("Hierarchy ID", "")).strip() if pd.notna(row.get("Hierarchy ID")) else ""
+        name = str(row.get("Name", "")).strip() if pd.notna(row.get("Name")) else ""
+        diff_index = int(row.get("Difference Index", 0)) if pd.notna(row.get("Difference Index")) else 0
+        metrics_available = str(row.get("Metrics available?", "")).strip().upper() == "Y"
+        raw_change = row.get("Change details", "")
+
+        if not hierarchy_id:
+            continue
+
         parts = hierarchy_id.split(".")
         level = len(parts)
         category_num = parts[0]
-        
-        # Level naming
-        level_name = {
-            1: "Category",
-            2: "Process Group",
-            3: "Process",
-            4: "Activity",
-            5: "Task"
-        }.get(level, f"Level {level}")
-        
-        # If level 2 and ends with .0, it's actually the Category root element (e.g. 1.0, 2.0)
+
+        if not category_num.isdigit():
+            raise ValueError(f"Invalid Hierarchy ID '{hierarchy_id}': category segment must be a numeric integer.")
+
         is_category_root = (level == 2 and parts[1] == "0")
         if is_category_root:
             level = 1
             level_name = "Category"
             parent_hid = ""
         else:
+            level_name = level_names.get(level, f"Level {level}")
             parent_hid = ".".join(parts[:-1]) if len(parts) > 1 else ""
             if len(parts) == 2 and parts[1] != "0":
                 parent_hid = f"{parts[0]}.0"
 
-        # Definition lookup
         defn = gloss_by_pid.get(pcf_id) or gloss_by_hid.get(hierarchy_id) or ""
-        
-        # Decode changes
         change_info = decode_changes(raw_change)
-        
-        # Determine Operating vs Support
-        try:
-            cat_int = int(category_num)
-            process_type = "Operating Processes" if cat_int <= 5 else "Management & Support Services"
-        except ValueError:
-            process_type = "Other"
+        process_type = "Operating Processes" if category_num in op_cats else "Management & Support Services"
 
         item = {
-            "id": pcf_id,
+            "id": pcf_id if pcf_id else hierarchy_id,
             "pcf_id": pcf_id,
             "hierarchy_id": hierarchy_id,
             "name": name,
@@ -169,10 +189,10 @@ def main():
             "changed_children": change_info["changed_children"]
         }
         elements.append(item)
-        
+
         if is_category_root:
             category_map[category_num] = {
-                "category_num": category_num,
+                "category_id": category_num,
                 "hierarchy_id": hierarchy_id,
                 "pcf_id": pcf_id,
                 "name": name,
@@ -182,7 +202,7 @@ def main():
                 "change_details": change_info["raw_changes"]
             }
 
-    # Summary by Category
+    # Category statistics
     cat_stats = []
     for cat_num, cat_info in sorted(category_map.items(), key=lambda x: int(x[0])):
         cat_elements = [e for e in elements if e["category_id"] == cat_num]
@@ -191,9 +211,9 @@ def main():
         renamed_count = sum(1 for e in cat_elements if e["is_renamed"])
         changes_count = sum(1 for e in cat_elements if e["has_changes"])
         metrics_count = sum(1 for e in cat_elements if e["metrics_available"])
-        max_diff = max(e["diff_index"] for e in cat_elements)
+        max_diff = max((e["diff_index"] for e in cat_elements), default=0)
         sum_diff = sum(e["diff_index"] for e in cat_elements)
-        
+
         cat_stats.append({
             "category_id": cat_num,
             "hierarchy_id": cat_info["hierarchy_id"],
@@ -208,6 +228,24 @@ def main():
             "max_diff_index": max_diff,
             "sum_diff_index": sum_diff
         })
+
+    return {
+        "categories": cat_stats,
+        "elements": elements
+    }
+
+def main():
+    if not os.path.exists(EXCEL_FILE):
+        raise FileNotFoundError(f"Source file not found: {EXCEL_FILE}")
+        
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
+    print(f"Loading {EXCEL_FILE}...")
+    parsed = parse_pcf_workbook(EXCEL_FILE)
+    elements = parsed["elements"]
+    cat_stats = parsed["categories"]
+    
+    print(f"Extracted {len(elements)} elements across {len(cat_stats)} categories.")
 
     attribution_text = "©2022 APQC. ALL RIGHTS RESERVED. This Process Classification Framework® (\"PCF\") is the copyrighted intellectual property of APQC."
     attribution_line = f"# {attribution_text}\n"

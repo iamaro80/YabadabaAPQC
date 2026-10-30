@@ -37,40 +37,38 @@ function decodeChanges(changeStr) {
     prefix_part = parts[0];
     let was_content = parts.slice(1).join("WAS:").trim();
 
-    if (was_content.endsWith(", NEW")) {
-      was_content = was_content.slice(0, -5).trim();
-      is_new = true;
-    } else if (was_content.endsWith(",NEW")) {
-      was_content = was_content.slice(0, -4).trim();
+    // Robust trailing NEW detection: case-insensitive, any whitespace around comma, optional trailing period
+    const mNew = /,\s*new\s*\.?\s*$/i.exec(was_content);
+    if (mNew) {
+      was_content = was_content.slice(0, mNew.index).trim();
       is_new = true;
     } else {
-      is_new = /\bNEW\b/.test(prefix_part);
+      is_new = /\bNEW\b/i.test(prefix_part);
     }
     renamed_was = was_content;
   } else {
-    if (raw.includes("RENAME")) {
+    if (/\bRENAME\b/i.test(raw)) {
       is_renamed = true;
     }
-    is_new = /\bNEW\b/.test(raw);
+    is_new = /\bNEW\b/i.test(raw);
   }
 
+  // Parse child tokens (+, -, c) as whole tokens only from prefix_part.
+  // Split the prefix on commas and match each token with ^[+\-c]\d+$
   const added = [];
-  const addRe = /\+(\d+)/g;
-  let m;
-  while ((m = addRe.exec(prefix_part)) !== null) {
-    added.push(m[1]);
-  }
-
   const removed = [];
-  const remRe = /\-(\d+)/g;
-  while ((m = remRe.exec(prefix_part)) !== null) {
-    removed.push(m[1]);
-  }
-
   const changed = [];
-  const chgRe = /\bc(\d+)/g;
-  while ((m = chgRe.exec(prefix_part)) !== null) {
-    changed.push(m[1]);
+  const tokens = prefix_part.split(",");
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i].trim();
+    const m = /^([+\-c])(\d+)$/.exec(token);
+    if (m) {
+      const prefixChar = m[1];
+      const childId = m[2];
+      if (prefixChar === "+") added.push(childId);
+      else if (prefixChar === "-") removed.push(childId);
+      else if (prefixChar === "c") changed.push(childId);
+    }
   }
 
   return {
@@ -90,39 +88,32 @@ function parsePCFWorkbook(workbookData, options = {}) {
     workbookData : 
     XLSX.read(workbookData, { type: Buffer.isBuffer(workbookData) ? "buffer" : "array" });
 
-  if (!wb.Sheets["Combined"]) {
-    throw new Error("Missing required worksheet: 'Combined'");
-  }
-  if (!wb.Sheets["Glossary terms"]) {
-    throw new Error("Missing required worksheet: 'Glossary terms'");
-  }
+  const findSheet = (name) => {
+    const key = Object.keys(wb.Sheets).find(k => k.toLowerCase().includes(name.toLowerCase()));
+    return key ? wb.Sheets[key] : null;
+  };
 
-  const combinedRows = XLSX.utils.sheet_to_json(wb.Sheets["Combined"], { defval: "" });
-  const glossaryRows = XLSX.utils.sheet_to_json(wb.Sheets["Glossary terms"], { defval: "" });
+  const combSheet = findSheet("Combined");
+  if (!combSheet) throw new Error("Missing required worksheet: 'Combined'");
+
+  const glossSheet = findSheet("Glossary");
+  if (!glossSheet) throw new Error("Missing required worksheet: 'Glossary terms'");
+
+  const combinedRows = XLSX.utils.sheet_to_json(combSheet, { defval: "" });
+  const glossaryRows = XLSX.utils.sheet_to_json(glossSheet, { defval: "" });
 
   if (combinedRows.length === 0) {
     throw new Error("Worksheet 'Combined' is empty");
   }
 
-  // Validate required headers
-  const combFirst = combinedRows[0];
-  const requiredCombCols = ["PCF ID", "Hierarchy ID", "Name"];
-  for (const col of requiredCombCols) {
-    if (!(col in combFirst)) {
-      throw new Error(`Worksheet 'Combined' is missing required column: '${col}'`);
-    }
-  }
-
   // Build glossary maps
   const glossByPid = new Map();
   const glossByHid = new Map();
-  let emptyDefGlossRows = 0;
 
   glossaryRows.forEach(row => {
-    const pid = String(row["Process Element ID"] || "").trim();
+    const pid = String(row["Process Element ID"] || row["PCF ID"] || "").trim();
     const hid = String(row["Hierarchy ID"] || "").trim();
     const defn = String(row["Definition"] || "").trim();
-    if (!defn) emptyDefGlossRows++;
     if (pid) glossByPid.set(pid, defn);
     if (hid) glossByHid.set(hid, defn);
   });
@@ -133,8 +124,16 @@ function parsePCFWorkbook(workbookData, options = {}) {
   const elements = [];
   const categoryMap = new Map();
 
+  const level_names = {
+    1: "Category",
+    2: "Process group",
+    3: "Process",
+    4: "Activity",
+    5: "Task"
+  };
+
   combinedRows.forEach(row => {
-    const pcf_id = String(row["PCF ID"] || "").trim();
+    const pcf_id = String(row["PCF ID"] || row["Process Element ID"] || "").trim();
     const hierarchy_id = String(row["Hierarchy ID"] || "").trim();
     const name = String(row["Name"] || "").trim();
     const diff_index = parseInt(row["Difference Index"] || 0, 10) || 0;
@@ -147,13 +146,9 @@ function parsePCFWorkbook(workbookData, options = {}) {
     let level = parts.length;
     const category_num = parts[0];
 
-    const level_names = {
-      1: "Category",
-      2: "Process Group",
-      3: "Process",
-      4: "Activity",
-      5: "Task"
-    };
+    if (!/^\d+$/.test(category_num)) {
+      throw new Error(`Invalid Hierarchy ID "${hierarchy_id}": category segment must be a numeric integer.`);
+    }
 
     const is_category_root = (level === 2 && parts[1] === "0");
     let level_name = "";
@@ -275,6 +270,34 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = { parsePCFWorkbook, decodeChanges };
 }
 
+// Handle JSON dump command line flag for parity testing
+if (process.argv.includes("--dump-json")) {
+  const hcBuf = fs.readFileSync(HC_FILE);
+  const hcData = parsePCFWorkbook(hcBuf, {
+    fileName: path.basename(HC_FILE),
+    frameworkName: "APQC Healthcare Provider PCF",
+    operatingCategories: new Set(["1", "2", "3", "4", "5"])
+  });
+  const retBuf = fs.readFileSync(RETAIL_FILE);
+  const retData = parsePCFWorkbook(retBuf, {
+    fileName: path.basename(RETAIL_FILE),
+    frameworkName: "APQC Retail PCF",
+    operatingCategories: new Set(["1", "2", "3", "4", "5", "6"])
+  });
+  const dump = JSON.stringify({
+    healthcare: hcData.elements,
+    retail: retData.elements
+  });
+  const dumpArgIdx = process.argv.indexOf("--dump-json");
+  const targetFile = process.argv[dumpArgIdx + 1];
+  const outPath = (targetFile && !targetFile.startsWith("--")) ? 
+    targetFile : 
+    path.join(__dirname, "../data/.parity_dump.json");
+
+  fs.writeFileSync(outPath, dump, "utf-8");
+  process.exit(0);
+}
+
 // Run test suite
 function runSuite() {
   console.log("=" .repeat(70));
@@ -354,6 +377,33 @@ function runSuite() {
   } catch (err) {
     console.log(`  • Correctly caught error: "${err.message}"`);
   }
+
+  // 4. decodeChanges unit cases
+  console.log("\n4. Testing decodeChanges Edge Cases");
+  const case1 = decodeChanges("-10381, c10383, RENAME, WAS:Foo-123, NEW");
+  if (!case1.is_new) throw new Error("case1 is_new should be true");
+  if (!case1.is_renamed) throw new Error("case1 is_renamed should be true");
+  if (case1.renamed_was !== "Foo-123") throw new Error(`case1 renamed_was expected 'Foo-123', got '${case1.renamed_was}'`);
+  if (case1.removed_children.length !== 1 || case1.removed_children[0] !== "10381") throw new Error("case1 removed_children expected ['10381']");
+  if (case1.changed_children.length !== 1 || case1.changed_children[0] !== "10383") throw new Error("case1 changed_children expected ['10383']");
+  if (case1.added_children.length !== 0) throw new Error("case1 added_children expected []");
+  console.log("  ✓ Case 1 '-10381, c10383, RENAME, WAS:Foo-123, NEW': passed");
+
+  const case2 = decodeChanges("WAS:Foo , new");
+  if (!case2.is_new) throw new Error("case2 is_new should be true");
+  if (!case2.is_renamed) throw new Error("case2 is_renamed should be true");
+  if (case2.renamed_was !== "Foo") throw new Error(`case2 renamed_was expected 'Foo', got '${case2.renamed_was}'`);
+  if (case2.added_children.length !== 0 || case2.removed_children.length !== 0) throw new Error("case2 children should be empty");
+  console.log("  ✓ Case 2 'WAS:Foo , new': passed");
+
+  const case3 = decodeChanges("+1, +2");
+  if (case3.is_new) throw new Error("case3 is_new should be false");
+  if (case3.is_renamed) throw new Error("case3 is_renamed should be false");
+  if (case3.renamed_was !== "") throw new Error("case3 renamed_was should be empty");
+  if (case3.added_children.length !== 2 || case3.added_children[0] !== "1" || case3.added_children[1] !== "2") {
+    throw new Error(`case3 added_children expected ['1', '2'], got ${JSON.stringify(case3.added_children)}`);
+  }
+  console.log("  ✓ Case 3 '+1, +2': passed");
 
   console.log("\n" + "=" .repeat(70));
   console.log("ALL JAVASCRIPT WORKBOOK PARSER TESTS PASSED 100%");

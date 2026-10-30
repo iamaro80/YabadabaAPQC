@@ -240,7 +240,7 @@ flowchart LR
 
 ## 7. Deliverables & Tools Inventory in this Workspace
 
-1. **Interactive HTML Product**: [`index.html`](index.html)
+1. **Interactive HTML Product**: [`index.html`](../index.html)
    - Zero-dependency, 100% offline-ready SPA openable directly via `file://` protocol:
      - **Recursive Expandable Hierarchy Tree**: Renders the complete 5-level process taxonomy (Category L1 $\rightarrow$ Process Group L2 $\rightarrow$ Process L3 $\rightarrow$ Activity L4 $\rightarrow$ Task L5). Each parent node features an interactive expand/collapse toggle (`▶` / `▼`). Toolbar features global `⊞ Expand All` and `⊟ Collapse All` controls. Filters and searches auto-expand ancestor branches so matched cards are never orphaned. Searching by ID (e.g. `20607` or `8.2`) auto-expands the branch, centers the viewport, and highlights the target card.
      - **Sticky Inspector Drawer**: Real-time slide-out sheet displaying complete ancestry breadcrumbs, official glossary definition (with copy to clipboard toast and fallback for un-glossaried items), OSB benchmarking status, and detailed diff breakdown (+children, -children, renames).
@@ -252,14 +252,14 @@ flowchart LR
      - **Adaptive Theme Engine**: Seamless Dark / Light mode toggle defaulting to OS system preference (`prefers-color-scheme`).
 
 2. **Data Pipeline & Automation**:
-   - Extraction & Normalization: [`scripts/build_pcf_json.py`](scripts/build_pcf_json.py)
-   - Automated Verification Suite: [`scripts/verify_pcf.py`](scripts/verify_pcf.py) (asserts 1,985 elements, 960 new, 134 renamed, 221 metrics, 1,931 definitions, and 13 category sheet row sums).
+   - Extraction & Normalization: [`scripts/build_pcf_json.py`](../scripts/build_pcf_json.py)
+   - Automated Verification Suite: [`scripts/verify_pcf.py`](../scripts/verify_pcf.py) (asserts 1,985 elements, 960 new, 134 renamed, 221 metrics, 1,931 definitions, and 13 category sheet row sums).
 
 3. **Structured Datasets**:
-   - [`data/pcf_data.json`](data/pcf_data.json): Complete unified JSON data bundle (1,985 records + metadata).
-   - [`data/pcf_data.js`](data/pcf_data.js): Browser-ready dataset bundled to `window.PCF_DATA` for offline `file://` execution.
-   - [`data/pcf_category_summary.csv`](data/pcf_category_summary.csv): Category scorecards, element totals, and difference indices.
-   - [`data/pcf_changes_inventory.csv`](data/pcf_changes_inventory.csv): Detailed audit log of all 1,187 modified, renamed, and new elements.
+   - [`data/pcf_data.json`](../data/pcf_data.json): Complete unified JSON data bundle (1,985 records + metadata).
+   - [`data/pcf_data.js`](../data/pcf_data.js): Browser-ready dataset bundled to `window.PCF_DATA` for offline `file://` execution.
+   - [`data/pcf_category_summary.csv`](../data/pcf_category_summary.csv): Category scorecards, element totals, and difference indices.
+   - [`data/pcf_changes_inventory.csv`](../data/pcf_changes_inventory.csv): Detailed audit log of all 1,187 modified, renamed, and new elements.
 
 ---
 
