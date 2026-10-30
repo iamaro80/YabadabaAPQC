@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Automated Verification Suite for APQC Healthcare PCF Dataset and Pipeline.
+YabadabaAPQC - Automated Verification Suite for Bundled Sample PCF Dataset.
 Validates:
 1. 1,985 total elements with unique PCF IDs.
 2. Exact change counts: 960 brand new, 134 renamed, 221 with metrics.
@@ -21,7 +21,7 @@ JS_FILE = os.path.join("data", "pcf_data.js")
 
 def verify():
     print("=" * 70)
-    print("APQC HEALTHCARE PCF AUTOMATED VERIFICATION SUITE")
+    print("YABADABAAPQC BUNDLED SAMPLE VERIFICATION SUITE")
     print("=" * 70)
 
     # 1. Check data files exist

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Shared test cases for APQC PCF Data Decoders (Python & JavaScript).
+YabadabaAPQC - Shared Test Cases for PCF Data Decoders (Python).
 Tests both Healthcare Provider and Retail reference workbooks against expected standards.
 """
 

@@ -1,6 +1,15 @@
-# APQC PCF Navigator
+# YabadabaAPQC
 
-Interactive, zero-dependency offline Single Page Application (SPA) for exploring, searching, and analyzing the APQC Process Classification Framework® (PCF).
+Interactive, zero-dependency offline Single Page Application (SPA) for exploring, searching, and analyzing any APQC Process Classification Framework® (PCF) workbook, whether cross-industry or industry-specific.
+
+## Sample Data
+
+The application bundles the APQC Healthcare Provider PCF (v7.2.1 vs v6.1.1) as an out-of-the-box demonstration dataset. Users can upload any standard APQC PCF Excel workbook (`.xlsx`) via the upload dialog or drag-and-drop. Clicking **Back to sample data** restores the bundled Healthcare Provider reference dataset.
+
+## Independent Tool Disclaimer
+
+> **YabadabaAPQC is an independent tool. It is not affiliated with or endorsed by APQC.**  
+> Process Classification Framework® and PCF® are registered trademarks of APQC.
 
 ## Architecture & Single Source of Truth
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Comprehensive End-to-End Browser Verification & Screenshot Capture for APQC PCF Navigator.
-Tests Phases 1A–1D & Phase 3 (Refreshed UI, Theme, Keyboard Nav, Performance, Contrast).
-Captures all 8 required screenshots under docs/screenshots/.
+YabadabaAPQC - Comprehensive End-to-End Browser Verification & Screenshot Capture.
+Tests UI, Themes, Keyboard Nav, Performance, Contrast, Rebrand & Dynamic Headings.
+Captures screenshots under docs/screenshots/.
 """
 
 import os
@@ -33,10 +33,12 @@ def start_server():
 
 def start_chrome():
     print(f"Starting headless Chrome on debug port {CHROME_PORT}...")
+    user_data = "/tmp/pcf_chrome_test_profile"
     chrome_cmd = [
         "/usr/bin/google-chrome",
         "--headless=new",
         f"--remote-debugging-port={CHROME_PORT}",
+        f"--user-data-dir={user_data}",
         "--no-sandbox",
         "--disable-gpu",
         "--disable-dev-shm-usage",
@@ -110,10 +112,13 @@ class CDPClient:
         })
         time.sleep(0.4)
 
-    def capture_screenshot(self, filename):
+    def capture_screenshot(self, filename, clip=None):
         filepath = os.path.join(SCREENSHOTS_DIR, filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        res = self.send("Page.captureScreenshot", {"format": "png"})
+        params = {"format": "png"}
+        if clip:
+            params["clip"] = clip
+        res = self.send("Page.captureScreenshot", params)
         raw_b64 = res.get("data", "")
         with open(filepath, "wb") as f:
             f.write(base64.b64decode(raw_b64))
@@ -184,6 +189,32 @@ def run_tests():
         footer_attr = client.evaluate("document.getElementById('footer-attribution').textContent.trim()")
         assert "©2022 APQC" in footer_attr, "Footer attribution missing"
         print(f"Footer Attribution: {footer_attr[:60]}... [OK]")
+
+        # Brand & Rebrand Assertions
+        brand_info = client.evaluate("""({
+            brandTitle: document.querySelector('.brand-title')?.textContent.trim(),
+            headerTitle: document.getElementById('header-framework-title')?.textContent.trim(),
+            headerVersion: document.getElementById('header-version-badge')?.textContent.trim(),
+            pageTitle: document.title,
+            footerDisclaimer: document.getElementById('footer-disclaimer')?.textContent.trim(),
+            resetBtnLabel: document.getElementById('reset-default-pcf-btn')?.textContent.trim(),
+            logoUseHref: document.querySelector('.header-logo use')?.getAttribute('href')
+        })""")
+        print(f"Brand Title: {brand_info['brandTitle']} (expected: YabadabaAPQC)")
+        print(f"Header Subtitle: {brand_info['headerTitle']} (expected: Sample data: Healthcare Provider)")
+        print(f"Header Version Badge: '{brand_info['headerVersion']}' (expected empty for sample data)")
+        print(f"Page Title: {brand_info['pageTitle']} (expected: YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1)")
+        print(f"Footer Disclaimer: {brand_info['footerDisclaimer']}")
+        print(f"Reset Button Label: {brand_info['resetBtnLabel']} (expected: Back to sample data)")
+        print(f"Logo Mark: {brand_info['logoUseHref']} (expected: #logo-mark)")
+
+        assert brand_info['brandTitle'] == "YabadabaAPQC", "Brand title must be YabadabaAPQC"
+        assert brand_info['headerTitle'] == "Sample data: Healthcare Provider", "Initial subtitle must be 'Sample data: Healthcare Provider'"
+        assert brand_info['headerVersion'] == "", "Initial version badge should be empty for sample data"
+        assert brand_info['pageTitle'] == "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1", "Page title mismatch"
+        assert brand_info['footerDisclaimer'] == "YabadabaAPQC is an independent tool. It is not affiliated with or endorsed by APQC.", "Footer disclaimer mismatch"
+        assert brand_info['resetBtnLabel'] == "Back to sample data", "Reset button text mismatch"
+        assert brand_info['logoUseHref'] == "#logo-mark", "Logo use href mismatch"
 
         print("\n" + "="*70)
         print("PHASE 1B: COLLAPSIBLE PANELS & KEYBOARD SHORTCUTS")
@@ -614,14 +645,45 @@ def run_tests():
         assert retail_state['supCats'] == 7, f"Expected 7 support categories for Retail, got {retail_state['supCats']}"
         assert retail_state['resetBtnVisible'], "Reset to default button should be visible when custom workbook loaded"
 
+        # Check Dynamic Header & Title for Custom Workbook
+        custom_titles = client.evaluate("""({
+            headerTitle: document.getElementById('header-framework-title')?.textContent.trim(),
+            headerVersion: document.getElementById('header-version-badge')?.textContent.trim(),
+            pageTitle: document.title,
+            csvFilename: (() => {
+                let rawFw = (state.data?.metadata?.framework || "pcf").toLowerCase();
+                rawFw = rawFw.replace(/\\b(apqc|pcf|process\\s+classification\\s+framework)\\b/gi, "");
+                let shortName = rawFw.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+                if (!shortName) shortName = "pcf";
+                return `yabadabaapqc_${shortName}_${state.activeView}.csv`;
+            })()
+        })""")
+        print(f"Retail Header Title: {custom_titles['headerTitle']} (expected: APQC Retail PCF)")
+        print(f"Retail Version: {custom_titles['headerVersion']} (expected: v7.2.1)")
+        print(f"Retail Page Title: {custom_titles['pageTitle']} (expected: YabadabaAPQC · APQC Retail PCF v7.2.1)")
+        print(f"Retail CSV Filename: {custom_titles['csvFilename']} (expected: yabadabaapqc_retail_explorer.csv)")
+
+        assert custom_titles['headerTitle'] == "APQC Retail PCF", "Custom header title mismatch"
+        assert custom_titles['pageTitle'] == "YabadabaAPQC · APQC Retail PCF v7.2.1", "Custom page title mismatch"
+        assert custom_titles['csvFilename'] == "yabadabaapqc_retail_explorer.csv", "CSV export filename pattern mismatch"
+
         # Test Reset to Default
         client.evaluate("document.getElementById('reset-default-pcf-btn').click()")
         time.sleep(0.3)
         restored_elements = client.evaluate("state.data.elements.length")
         is_custom = client.evaluate("state.isCustomLoaded")
+        reset_titles = client.evaluate("""({
+            headerTitle: document.getElementById('header-framework-title')?.textContent.trim(),
+            pageTitle: document.title
+        })""")
         print(f"After Reset: elements={restored_elements} (Expected: 1985), isCustomLoaded={is_custom} (Expected: False)")
+        print(f"Restored Header Title: {reset_titles['headerTitle']} (expected: Sample data: Healthcare Provider)")
+        print(f"Restored Page Title: {reset_titles['pageTitle']} (expected: YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1)")
+
         assert restored_elements == 1985, "Reset failed to restore Healthcare dataset"
         assert not is_custom, "isCustomLoaded should be false after reset"
+        assert reset_titles['headerTitle'] == "Sample data: Healthcare Provider", "Header title did not reset"
+        assert reset_titles['pageTitle'] == "YabadabaAPQC · APQC Healthcare Provider PCF v7.2.1", "Page title did not reset"
 
         # Test Invalid File Upload Handling
         invalid_result = client.evaluate("""(() => {
@@ -1632,6 +1694,7 @@ def run_tests():
                 const edgeSelected = getVar('--edge-selected');
                 const focusRing = getVar('--focus-ring');
                 const borderInput = getVar('--border-input');
+                const logoBg = getVar('--logo-bg');
 
                 results[t] = {
                     text_on_app: cr(text, bgApp),
@@ -1652,7 +1715,9 @@ def run_tests():
                     edge_on_app: cr(edgeSelected, bgApp),
                     edge_on_panel: cr(edgeSelected, bgPanel),
                     focus_ring_on_app: cr(focusRing, bgApp),
-                    border_input_on_panel: cr(borderInput, bgPanel)
+                    border_input_on_panel: cr(borderInput, bgPanel),
+                    logo_white_on_bg: cr('#ffffff', logoBg),
+                    footer_disclaimer_on_panel: cr(textMuted, bgPanel)
                 };
             }
             return results;
@@ -1670,6 +1735,8 @@ def run_tests():
             print(f"  • --edge-selected on --bg-app: {res['edge_on_app']:.2f}:1, UI component: {res['edge_on_panel']:.2f}:1")
             print(f"  • --focus-ring on --bg-app: {res['focus_ring_on_app']:.2f}:1")
             print(f"  • --border-input on --bg-panel: {res['border_input_on_panel']:.2f}:1")
+            print(f"  • Logo white on --logo-bg: {res['logo_white_on_bg']:.2f}:1")
+            print(f"  • Footer disclaimer on --bg-panel: {res['footer_disclaimer_on_panel']:.2f}:1")
             
             # Assert text >= 4.5:1
             assert res['text_on_app'] >= 4.5, f"{tname}: text_on_app failed 4.5:1"
@@ -1685,6 +1752,8 @@ def run_tests():
             assert res['status_removed_on_panel'] >= 4.5, f"{tname}: status_removed_on_panel failed 4.5:1"
             assert res['status_renamed_on_app'] >= 4.5, f"{tname}: status_renamed_on_app failed 4.5:1"
             assert res['status_renamed_on_panel'] >= 4.5, f"{tname}: status_renamed_on_panel failed 4.5:1"
+            assert res['logo_white_on_bg'] >= 4.5, f"{tname}: logo_white_on_bg failed 4.5:1"
+            assert res['footer_disclaimer_on_panel'] >= 4.5, f"{tname}: footer_disclaimer_on_panel failed 4.5:1"
             # Assert UI components >= 3.0:1
             assert res['edge_on_app'] >= 3.0, f"{tname}: edge_on_app failed 3.0:1"
             assert res['focus_ring_on_app'] >= 3.0, f"{tname}: focus_ring_on_app failed 3.0:1"
@@ -1749,6 +1818,101 @@ def run_tests():
             client.capture_screenshot(f"theme_{theme_key}_upload_error.png")
             client.evaluate("closeUploadModal()")
             time.sleep(0.2)
+
+        # Capture Brand Screenshots: brand_header_dark.png, brand_header_light.png, brand_tab_zoom.png
+        print("\n--- Capturing Brand Header & Tab Zoom Screenshots ---")
+        client.set_viewport(1440, 900)
+
+        # 1. brand_header_dark.png
+        client.evaluate("applyTheme('dark'); switchView('explorer', false);")
+        time.sleep(0.3)
+        header_clip_dark = client.evaluate("""(() => {
+            const h = document.querySelector('header.app-header');
+            const r = h.getBoundingClientRect();
+            return { x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height), scale: 1 };
+        })()""")
+        client.capture_screenshot("brand_header_dark.png", clip=header_clip_dark)
+
+        # 2. brand_header_light.png
+        client.evaluate("applyTheme('light');")
+        time.sleep(0.3)
+        header_clip_light = client.evaluate("""(() => {
+            const h = document.querySelector('header.app-header');
+            const r = h.getBoundingClientRect();
+            return { x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height), scale: 1 };
+        })()""")
+        client.capture_screenshot("brand_header_light.png", clip=header_clip_light)
+
+        # 3. brand_tab_zoom.png
+        client.evaluate("applyTheme('dark');")
+        tab_clip = client.evaluate("""(() => {
+            let el = document.getElementById('tab-zoom-showcase');
+            if (el) el.remove();
+            el = document.createElement('div');
+            el.id = 'tab-zoom-showcase';
+            el.style.position = 'fixed';
+            el.style.top = '60px';
+            el.style.left = '60px';
+            el.style.zIndex = '999999';
+            el.style.padding = '24px 28px';
+            el.style.background = '#1a1a1a';
+            el.style.border = '1px solid #3a3a3a';
+            el.style.borderRadius = '12px';
+            el.style.boxShadow = '0 24px 48px rgba(0,0,0,0.5)';
+            el.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            el.style.color = '#fff';
+            el.style.display = 'flex';
+            el.style.flexDirection = 'column';
+            el.style.gap = '20px';
+            el.style.width = '520px';
+
+            const faviconHref = document.querySelector('link[rel="icon"]').href;
+            const pageTitle = document.title;
+
+            el.innerHTML = `
+                <div style="font-size: 13px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em;">Browser Tab & Favicon Inspection</div>
+                <!-- Simulated Desktop Browser Tab -->
+                <div style="display: flex; align-items: center; background: #2b2b2b; border-radius: 8px 8px 0 0; padding: 10px 14px; border-top: 2px solid #6b57d6; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <img src="${faviconHref}" width="16" height="16" style="margin-right: 10px; display: block; flex-shrink: 0;" alt="Tab Icon" />
+                    <span style="font-size: 13px; font-weight: 500; color: #ececec; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${pageTitle}</span>
+                    <span style="font-size: 14px; color: #777; margin-left: 10px; line-height: 1;">✕</span>
+                </div>
+                <!-- Crisp Pixel Scale Grids -->
+                <div style="display: flex; gap: 20px; align-items: flex-end; padding-top: 14px; border-top: 1px solid #2e2e2e;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">16×16 (1x)</div>
+                        <div style="padding: 12px; background: #262626; border: 1px solid #333; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+                            <img src="${faviconHref}" width="16" height="16" style="display: block;" />
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">32×32 (2x)</div>
+                        <div style="padding: 12px; background: #262626; border: 1px solid #333; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px;">
+                            <img src="${faviconHref}" width="32" height="32" style="display: block;" />
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">64×64 (4x)</div>
+                        <div style="padding: 12px; background: #262626; border: 1px solid #333; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: 92px; height: 92px;">
+                            <img src="${faviconHref}" width="64" height="64" style="display: block;" />
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">128×128 (8x Zoom)</div>
+                        <div style="padding: 12px; background: #262626; border: 1px solid #333; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: 156px; height: 156px;">
+                            <img src="${faviconHref}" width="128" height="128" style="display: block;" />
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(el);
+            const r = el.getBoundingClientRect();
+            return { x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height), scale: 1 };
+        })()""")
+        time.sleep(0.3)
+        client.capture_screenshot("brand_tab_zoom.png", clip=tab_clip)
+        client.evaluate("document.getElementById('tab-zoom-showcase')?.remove()")
+        client.evaluate("applyTheme('dark');")
 
         # 6. Retail Workbook Upload in both themes
         print("\n--- Retail Workbook Upload in New Themes ---")

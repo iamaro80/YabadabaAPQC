@@ -1,3 +1,5 @@
+> Example report written from the bundled Healthcare Provider sample. It is not documentation of the tool.
+
 # APQC Process Classification Framework (PCF) — Healthcare Provider
 ## Comprehensive Review & Comparative Analysis: Version 7.2.1 vs. Version 6.1.1 (April 2023)
 

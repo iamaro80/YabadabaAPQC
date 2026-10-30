@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-APQC PCF Healthcare Provider v7.2.1 vs v6.1.1 Data Pipeline
+YabadabaAPQC - PCF Data Pipeline
 Extracts, normalizes, joins glossary definitions, decodes change details,
-and exports clean JSON and CSV files.
+and exports clean JSON and JS dataset files. (Bundled sample: Healthcare Provider v7.2.1 vs v6.1.1).
 """
 
 import os

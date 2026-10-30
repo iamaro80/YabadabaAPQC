@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Shared JavaScript Test Suite for APQC PCF Workbook Parser.
- * Tests client-side decoding against both reference workbooks using vendor/xlsx.full.min.js.
+ * YabadabaAPQC - Shared JavaScript Test Suite for PCF Workbook Parser.
+ * Tests client-side decoding against reference workbooks using vendor/xlsx.full.min.js.
  */
 
 const fs = require("fs");
